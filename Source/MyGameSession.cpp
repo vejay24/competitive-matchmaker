@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "UEtopiaCompetitive.h"
+#include "Comp.h"
 #include "Online.h"
 #include "MyGameInstance.h"
 #include "MyPlayerState.h"
@@ -166,7 +166,7 @@ void AMyGameSession::StartMatchmaking(TSharedPtr<const FUniqueNetId> UserId, FNa
 		{
 
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION StartMatchmaking:  Session Valid"));
-			
+
 			if (CurrentSessionParams.UserId.IsValid())
 			{
 				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION StartMatchmaking:  CurrentSessionParams.UserId Valid"));
@@ -198,12 +198,12 @@ void AMyGameSession::StartMatchmaking(TSharedPtr<const FUniqueNetId> UserId, FNa
 				Sessions->StartMatchmaking(justASinglePlayer, SessionNameInc, testSettings, SearchSettingsRef);
 				// The below was for search
 
-				
+
 				//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION FindSessions:  1"));
-				
+
 				//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION FindSessions:  2"));
 
-				
+
 				//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION FindSessions:  3"));
 
 				//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION FindSessions:  4"));
@@ -540,7 +540,7 @@ FString AMyGameSession::ApproveLogin(const FString& Options)
 	UWorld* const World = GetWorld();
 	check(World);
 
-	AGameMode* const GameMode = World->GetAuthGameMode();
+	AGameMode* const GameMode = Cast<AGameMode>(World->GetAuthGameMode());
 	check(GameMode);
 
 	int32 SpectatorOnly = 0;

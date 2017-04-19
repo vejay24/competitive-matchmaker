@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "UEtopiaCompetitive.h"
+#include "Comp.h"
 #include "MyGameState.h"
 #include "MyGameSession.h"
 #include "MyPlayerState.h"
@@ -143,7 +143,7 @@ void UMyGameInstance::Init()
 	// Trying to cancel matchmaking when the world is destroyed...  Can't get it.
 	//OnPreWorldFinishDestroy.AddDynamic(this, &AMyPlayerController::TestFunction);
 	//FWorldDelegates::OnPreWorldFinishDestroy.Add( &UMyGameInstance::CancelMatchmaking);
-	
+
 	// TODO:  Bind to the FCoreDelegates::OnPreExit multicast delegate
 
 	// Not sure if we want this here, but we need to run a serverside check for active sessions
@@ -172,7 +172,7 @@ AMyGameSession* UMyGameInstance::GetGameSession() const
 	if (World)
 	{
 		//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] World Found"));
-		AGameMode* const Game = World->GetAuthGameMode();
+		AGameMode* const Game = Cast<AGameMode>(World->GetAuthGameMode());
 		if (Game)
 		{
 			//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Game Found"));
@@ -299,7 +299,8 @@ void UMyGameInstance::GetServerInfoComplete(FHttpRequestPtr HttpRequest, FHttpRe
 
 
 				ServerTitle = JsonParsed->GetStringField("title");
-				AGameState* gameState = GetWorld()->GameState;
+
+				AGameState* gameState = Cast<AGameState>(GetWorld()->GetGameState());
 				AMyGameState* uetopiaGameState = Cast<AMyGameState>(gameState);
 				//AMyPlayerState* playerS = Cast<AMyPlayerState>(thisPlayerState);
 				uetopiaGameState->serverTitle = ServerTitle;
@@ -367,21 +368,21 @@ void UMyGameInstance::GetMatchInfoComplete(FHttpRequestPtr HttpRequest, FHttpRes
 
 
 				// Put all of our player information in our MatchInfo TArray
-				
+
 				FJsonObjectConverter::JsonObjectStringToUStruct<FMyMatchInfo>(
 					JsonRaw,
 					&MatchInfo,
 					0, 0);
 
 				// Put replicated data in game state
-				AGameState* gameState = GetWorld()->GameState;
+				AGameState* gameState = Cast<AGameState>(GetWorld()->GetGameState());
 				AMyGameState* uetopiaGameState = Cast<AMyGameState>(gameState);
 
 				// Also build out the team struct for display purposes
 				// Empty anything that might have been there
 				uetopiaGameState->TeamList.teams.Empty();
 				// First, we need to know how many teams there are
-				
+
 				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [GetMatchInfo] Building Team list"));
 				for (int32 b = 0; b < MatchInfo.players.Num(); b++) {
 					if (teamCount < MatchInfo.players[b].teamId) {
@@ -410,7 +411,7 @@ void UMyGameInstance::GetMatchInfoComplete(FHttpRequestPtr HttpRequest, FHttpRes
 				}
 
 				MatchTitle = JsonParsed->GetStringField("title");
-				
+
 				//AMyPlayerState* playerS = Cast<AMyPlayerState>(thisPlayerState);
 				uetopiaGameState->MatchTitle = MatchTitle;
 
@@ -542,7 +543,7 @@ bool UMyGameInstance::ActivatePlayer(class AMyPlayerController* NewPlayerControl
 		// on competitive, if a connecting player is not in the matchInfo, just kick them.
 		for (int32 b = 0; b < MatchInfo.players.Num(); b++)
 		{
-			
+
 			if (MatchInfo.players[b].userKeyId == playerKeyId) {
 				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] AuthorizePlayer - FOUND MATCHING playerKeyId"));
 				playerKeyIdFound = true;
@@ -618,7 +619,7 @@ bool UMyGameInstance::ActivatePlayer(class AMyPlayerController* NewPlayerControl
 
 
 
-			
+
 
 			//UE_LOG(LogTemp, Log, TEXT("playerID: %s"), playerID);
 			//UE_LOG(LogTemp, Log, TEXT("playerKeyId: %s"), playerKeyId);
@@ -943,7 +944,7 @@ void UMyGameInstance::ActivateMatchPlayerRequestComplete(FHttpRequestPtr HttpReq
 					// This is mostly for convenience in displaying teams in-game.  The authority of data is the MatchInfo.
 
 					// Put replicated data in game state
-					AGameState* gameState = GetWorld()->GameState;
+					AGameState* gameState = Cast<AGameState>(GetWorld()->GetGameState());
 					AMyGameState* uetopiaGameState = Cast<AMyGameState>(gameState);
 
 					// b is the team index
@@ -962,7 +963,7 @@ void UMyGameInstance::ActivateMatchPlayerRequestComplete(FHttpRequestPtr HttpReq
 
 							}
 						}
-						
+
 					}
 
 
@@ -998,20 +999,20 @@ void UMyGameInstance::ActivateMatchPlayerRequestComplete(FHttpRequestPtr HttpReq
 
 					}
 
-					
+
 					if (activeJoinedPlayers >= totalExpectedPlayers)
 					{
 						UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [ActivateMatchPlayerRequestComplete] - activeJoinedPlayers >= totalExpectedPlayers - starting timer"));
-					//matchStarted = true;
+						//matchStarted = true;
 
 						// do it after a timer
 						GetWorld()->GetTimerManager().SetTimer(AttemptStartMatchTimerHandle, this, &UMyGameInstance::AttemptStartMatch, 10.0f, false);
-					// travel to the third person map
-					//FString UrlString = TEXT("/Game/ThirdPersonCPP/Maps/ThirdPersonExampleMap?listen");
-					//GetWorld()->GetAuthGameMode()->bUseSeamlessTravel = true;
-					//GetWorld()->ServerTravel(UrlString);
+						// travel to the third person map
+						//FString UrlString = TEXT("/Game/ThirdPersonCPP/Maps/ThirdPersonExampleMap?listen");
+						//GetWorld()->GetAuthGameMode()->bUseSeamlessTravel = true;
+						//GetWorld()->ServerTravel(UrlString);
 					}
-					
+
 
 
 
@@ -1374,14 +1375,14 @@ bool UMyGameInstance::DeActivatePlayer(int32 playerID)
 			FString FileName = "serversavedata.dat";
 			URamaSaveLibrary::RamaSave_SaveToFile(GetWorld(), FileName, FileIOSuccess, allComponentsSaved);
 			if (FileIOSuccess) {
-				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] File IO Success."));
+			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] File IO Success."));
 			}
 			else {
-				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] File IO FAIL."));
+			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] File IO FAIL."));
 			}
 			*/
 
-			
+
 
 			//Return the server back to the lobbyLevel in case a user logs in before the server is decomissioned
 
@@ -1568,19 +1569,19 @@ void UMyGameInstance::TransferPlayerRequestComplete(FHttpRequestPtr HttpRequest,
 								/*
 								UWorld* const World = GetWorld(); // get a reference to the world
 								if (World) {
-									//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [TransferPlayerRequestComplete] - Spawning a TravelApprovedActor"));
-									FVector spawnlocation = FVector(thisServerLink.coordLocationX, thisServerLink.coordLocationY, thisServerLink.coordLocationZ);
-									FTransform SpawnTransform = FTransform(spawnlocation);
-									AMyTravelApprovedActor* const TravelApprovedActor = World->SpawnActor<AMyTravelApprovedActor>(AMyTravelApprovedActor::StaticClass(), SpawnTransform);
-									TravelApprovedActor->setPlayerKeyId(userKeyId);
-									TravelApprovedActor->SetOwner(pc);
-									TravelApprovedActor->GetStaticMeshComponent()->SetOnlyOwnerSee(true);
+								//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [TransferPlayerRequestComplete] - Spawning a TravelApprovedActor"));
+								FVector spawnlocation = FVector(thisServerLink.coordLocationX, thisServerLink.coordLocationY, thisServerLink.coordLocationZ);
+								FTransform SpawnTransform = FTransform(spawnlocation);
+								AMyTravelApprovedActor* const TravelApprovedActor = World->SpawnActor<AMyTravelApprovedActor>(AMyTravelApprovedActor::StaticClass(), SpawnTransform);
+								TravelApprovedActor->setPlayerKeyId(userKeyId);
+								TravelApprovedActor->SetOwner(pc);
+								TravelApprovedActor->GetStaticMeshComponent()->SetOnlyOwnerSee(true);
 
 
 								}
 								*/
 
-								
+
 							}
 						}
 					}
@@ -1798,18 +1799,18 @@ void UMyGameInstance::LoadServerStateFromFile()
 	TArray<FString> StreamingLevelsStates;
 	FString FileName = "serversavedata.dat";
 
-	
+
 	URamaSaveLibrary::RamaSave_LoadStreamingStateFromFile(GetWorld(), FileIOSuccess, FileName, StreamingLevelsStates);
 	//URamaSaveLibrary::RamaSave_LoadFromFile(GetWorld(), FileIOSuccess, allComponentsLoaded, FileName, destroyActorsBeforeLoad, dontLoadPlayerPawns);
 	if (FileIOSuccess) {
-		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] RequestBeginPlay File IO Success."));
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] RequestBeginPlay File IO Success."));
 	}
 	else {
-		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] RequestBeginPlay File IO FAIL."));
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] RequestBeginPlay File IO FAIL."));
 	}
 	*/
 
-	
+
 }
 
 bool UMyGameInstance::OutgoingChat(int32 playerID, FText message)
@@ -1880,7 +1881,7 @@ bool UMyGameInstance::SubmitMatchMakerResults()
 
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] SubmitMatchMakerResults"));
 
-	MatchInfo.encryption = "off"; 
+	MatchInfo.encryption = "off";
 	FString json_string;
 	FJsonObjectConverter::UStructToJsonObjectString(MatchInfo.StaticStruct(), &MatchInfo, json_string, 0, 0);
 	UE_LOG(LogTemp, Log, TEXT("json_string: %s"), *json_string);
@@ -2640,8 +2641,8 @@ bool UMyGameInstance::RegisterNewSession(FString IncServerSessionHostAddress, FS
 		GetServerLinks();
 	}
 
-	
-	
+
+
 	return true;
 }
 
@@ -2894,7 +2895,7 @@ bool UMyGameInstance::RecordKill(int32 killerPlayerID, int32 victimPlayerID)
 			CalculateNewRank(killerPlayerIndex, victimPlayerIndex, true);
 
 			//Calculate winning team
-			
+
 
 		}
 
@@ -2947,7 +2948,7 @@ bool UMyGameInstance::RecordKill(int32 killerPlayerID, int32 victimPlayerID)
 				}
 			}
 
-			
+
 		}
 
 		//Check to see if the game is over
@@ -3168,7 +3169,7 @@ bool UMyGameInstance::RecordKill(int32 killerPlayerID, int32 victimPlayerID)
 
 	}
 
-	
+
 	return true;
 }
 

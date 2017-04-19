@@ -48,20 +48,20 @@ void AMyGameMode::BeginPlay()
 	//	}
 	//}
 
-	// Tried to set the player name.  not working like this.  
+	// Tried to set the player name.  not working like this.
 	/*
 	APlayerController* pc = NULL;
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
 		pc = Iterator->Get();
 		//AMyPlayerController* Mypc = Cast(pc);
-		
+
 		AUEtopiaCompetitiveCharacter* pawn = Cast<AUEtopiaCompetitiveCharacter>(pc->GetCharacter());
 		pawn->Text->SetText(FText::FromString(pc->PlayerState->PlayerName));
 		// TODO set color
 	}
 	*/
-	
+
 
 
 }
@@ -73,15 +73,6 @@ TSubclassOf<AGameSession> AMyGameMode::GetGameSessionClass() const
 	//return AMyGameSession::StaticClass();
 }
 
-void AMyGameMode::PreLogin(const FString& Options, const FString& Address, const TSharedPtr<const FUniqueNetId>& UniqueId, FString& ErrorMessage)
-{
-	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AMyGameMode] PreLogin"));
-	/*
-	Ideally we could do activate here, but we don't have the playerID
-	*/
-	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
-
-}
 
 FString AMyGameMode::InitNewPlayer(APlayerController* NewPlayerController, const FUniqueNetIdRepl& UniqueId, const FString& Options, const FString& Portal)
 {
@@ -179,5 +170,3 @@ void AMyGameMode::Logout(AController* Exiting)
 	TheGameInstance->DeActivatePlayer(ExitingPlayerId);
 
 }
-
-

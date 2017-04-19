@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "UEtopiaCompetitive.h"
+#include "Comp.h"
 #include "UEtopiaCompetitiveCharacter.h"
 #include "Engine.h"
 //For the UGameplayStatics::SpawnEmitterAttached
@@ -17,10 +17,10 @@ AMyProjectile::AMyProjectile()
 
 	//StaticMesh'/Game/Geometry/Meshes/1M_Cube_Socket.1M_Cube_Socket'
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereVisualAsset(TEXT("/Game/Geometry/Meshes/1M_Cube_Socket.1M_Cube_Socket"));
-	StaticMeshComponent->SetMobility(EComponentMobility::Movable);
-	StaticMeshComponent->SetStaticMesh(SphereVisualAsset.Object);
-	StaticMeshComponent->SetRelativeLocation(FVector(1.0f, 1.0f, -3.0f));
-	StaticMeshComponent->SetRelativeScale3D(FVector(0.1f, 0.1f, 0.1f));
+	GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
+	GetStaticMeshComponent()->SetStaticMesh(SphereVisualAsset.Object);
+	GetStaticMeshComponent()->SetRelativeLocation(FVector(1.0f, 1.0f, -3.0f));
+	GetStaticMeshComponent()->SetRelativeScale3D(FVector(0.1f, 0.1f, 0.1f));
 	//RootComponent = StaticMeshComponent;
 
 	if (!IsRunningDedicatedServer()) {
@@ -34,7 +34,7 @@ AMyProjectile::AMyProjectile()
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AMyServerPortalActor] [Construct]  "));
 			Material = MatFinder.Object;
 			MaterialInstance = UMaterialInstanceDynamic::Create(Material, NULL);
-			StaticMeshComponent->SetMaterial(0, MaterialInstance);
+			GetStaticMeshComponent()->SetMaterial(0, MaterialInstance);
 		}
 
 
@@ -57,7 +57,7 @@ AMyProjectile::AMyProjectile()
 	//CollisionComp->OnComponentBeginOverlap.Add(*OnHit);
 	RootComponent = CollisionComp;
 
-	StaticMeshComponent->SetupAttachment(RootComponent);
+	GetStaticMeshComponent()->SetupAttachment(RootComponent);
 
 	MovementComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
 	MovementComp->UpdatedComponent = CollisionComp;
@@ -76,8 +76,8 @@ AMyProjectile::AMyProjectile()
 		MyParticleSystem = PSClass.Object; // MyParticleSystem is a UParticleSystem pointer
 	}
 
-	
-	
+
+
 
 
 
@@ -97,14 +97,14 @@ void AMyProjectile::BeginPlay()
 
 
 	UGameplayStatics::SpawnEmitterAttached(
-	MyParticleSystem,                   //particle system
-	StaticMeshComponent,      //mesh to attach to
-	FName("Head"),   //socket name
-	FVector(0, 0, 64),  //location relative to socket
-	FRotator(0, 0, 0), //rotation
-	EAttachLocation::KeepRelativeOffset,
-	true //will be deleted automatically
-	);
+		MyParticleSystem,                   //particle system
+		StaticMeshComponent,      //mesh to attach to
+		FName("Head"),   //socket name
+		FVector(0, 0, 64),  //location relative to socket
+		FRotator(0, 0, 0), //rotation
+		EAttachLocation::KeepRelativeOffset,
+		true //will be deleted automatically
+		);
 
 
 }
