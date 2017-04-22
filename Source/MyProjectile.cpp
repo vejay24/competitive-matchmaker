@@ -16,7 +16,7 @@ AMyProjectile::AMyProjectile()
 	PrimaryActorTick.bCanEverTick = true;
 
 	//StaticMesh'/Game/Geometry/Meshes/1M_Cube_Socket.1M_Cube_Socket'
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereVisualAsset(TEXT("/Game/Geometry/Meshes/1M_Cube_Socket.1M_Cube_Socket"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereVisualAsset(TEXT("/Game/Geometry/Meshes/1M_Cube.1M_Cube"));
 	GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
 	GetStaticMeshComponent()->SetStaticMesh(SphereVisualAsset.Object);
 	GetStaticMeshComponent()->SetRelativeLocation(FVector(1.0f, 1.0f, -3.0f));
@@ -70,7 +70,7 @@ AMyProjectile::AMyProjectile()
 	MovementComp->Friction = 0.f;
 
 	// ParticleSystem'/Game/p_progectile_effect.p_progectile_effect'
-	static ConstructorHelpers::FObjectFinder<UParticleSystem> PSClass(TEXT("ParticleSystem'/Game/p_progectile_effect.p_progectile_effect'"));
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> PSClass(TEXT("ParticleSystem'/Game/p_projectile_effect.p_projectile_effect'"));
 
 	if (PSClass.Object != NULL) {
 		MyParticleSystem = PSClass.Object; // MyParticleSystem is a UParticleSystem pointer
@@ -140,7 +140,7 @@ void AMyProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponent, AAct
 
 		// TODO check team?  Friendly Fire.
 
-		// Create a damage event  
+		// Create a damage event
 		TSubclassOf<UDamageType> const ValidDamageTypeClass = TSubclassOf<UDamageType>(UDamageType::StaticClass());
 		FDamageEvent DamageEvent(ValidDamageTypeClass);
 
