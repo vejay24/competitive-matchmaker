@@ -1,6 +1,6 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "UEtopiaCompetitive.h"
+#include "Comp.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "UnrealNetwork.h"
 #include "MyProjectile.h"
@@ -37,21 +37,21 @@ AUEtopiaCompetitiveCharacter::AUEtopiaCompetitiveCharacter()
 	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
 
-	// Create a follow camera
+												// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
+												   // Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
+												   // are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 
-	// create a text render component so we can see player names
-	//Text = CreateDefaultSubobject<UTextRenderComponent>(TEXT("Text Render"));
-	//Text->SetupAttachment(RootComponent);
-	//Text->SetRelativeLocation(FVector(0.f, 0, 90.f));
-	//Text->SetTextRenderColor(FColor::Red);
-	//Text->SetHorizontalAlignment(EHorizTextAligment::EHTA_Center);
-	//Text->SetText(FText::FromString(TEXT("name")));
+												   // create a text render component so we can see player names
+												   //Text = CreateDefaultSubobject<UTextRenderComponent>(TEXT("Text Render"));
+												   //Text->SetupAttachment(RootComponent);
+												   //Text->SetRelativeLocation(FVector(0.f, 0, 90.f));
+												   //Text->SetTextRenderColor(FColor::Red);
+												   //Text->SetHorizontalAlignment(EHorizTextAligment::EHTA_Center);
+												   //Text->SetText(FText::FromString(TEXT("name")));
 
 	Health = 1.0f;
 	//HealthMax = 100.0f;
@@ -145,12 +145,12 @@ void AUEtopiaCompetitiveCharacter::MoveForward(float Value)
 
 void AUEtopiaCompetitiveCharacter::MoveRight(float Value)
 {
-	if ( (Controller != NULL) && (Value != 0.0f) )
+	if ((Controller != NULL) && (Value != 0.0f))
 	{
 		// find out which way is right
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
-	
+
 		// get right vector 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction

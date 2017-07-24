@@ -3,20 +3,20 @@
 #include "GameFramework/Character.h"
 #include "UEtopiaCompetitiveCharacter.generated.h"
 
-UCLASS(config=Game)
+UCLASS(config = Game)
 class AUEtopiaCompetitiveCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
-	/** Camera boom positioning the camera behind the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		/** Camera boom positioning the camera behind the character */
+		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
 
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
-	
+
 
 	/** player pressed start fire action */
 	void OnStartFire();
@@ -28,19 +28,19 @@ public:
 	AUEtopiaCompetitiveCharacter();
 
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseTurnRate;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		float BaseTurnRate;
 
 	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseLookUpRate;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		float BaseLookUpRate;
 
 	/** UETOPIA ADDED VARS. */
 	// Current health of the Pawn
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "UETOPIA")
 		float Health;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category =" UETOPIA")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = " UETOPIA")
 		int32 ProjectileCount;
 
 
@@ -80,16 +80,16 @@ protected:
 	/** Called for side to side input */
 	void MoveRight(float Value);
 
-	/** 
-	 * Called via input to turn at a given rate. 
-	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-	 */
+	/**
+	* Called via input to turn at a given rate.
+	* @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
+	*/
 	void TurnAtRate(float Rate);
 
 	/**
-	 * Called via input to turn look up/down at a given rate. 
-	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-	 */
+	* Called via input to turn look up/down at a given rate.
+	* @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
+	*/
 	void LookUpAtRate(float Rate);
 
 	/** Handler for when a touch input begins. */

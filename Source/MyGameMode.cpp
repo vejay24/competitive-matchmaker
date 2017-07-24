@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "UEtopiaCompetitive.h"
+#include "Comp.h"
 //#include "MyPawn.h"
 #include "MyPlayerState.h"
 #include "MyGameState.h"
@@ -48,17 +48,17 @@ void AMyGameMode::BeginPlay()
 	//	}
 	//}
 
-	// Tried to set the player name.  not working like this.
+	// Tried to set the player name.  not working like this.  
 	/*
 	APlayerController* pc = NULL;
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
-		pc = Iterator->Get();
-		//AMyPlayerController* Mypc = Cast(pc);
+	pc = Iterator->Get();
+	//AMyPlayerController* Mypc = Cast(pc);
 
-		AUEtopiaCompetitiveCharacter* pawn = Cast<AUEtopiaCompetitiveCharacter>(pc->GetCharacter());
-		pawn->Text->SetText(FText::FromString(pc->PlayerState->PlayerName));
-		// TODO set color
+	AUEtopiaCompetitiveCharacter* pawn = Cast<AUEtopiaCompetitiveCharacter>(pc->GetCharacter());
+	pawn->Text->SetText(FText::FromString(pc->PlayerState->PlayerName));
+	// TODO set color
 	}
 	*/
 
@@ -170,3 +170,5 @@ void AMyGameMode::Logout(AController* Exiting)
 	TheGameInstance->DeActivatePlayer(ExitingPlayerId);
 
 }
+
+

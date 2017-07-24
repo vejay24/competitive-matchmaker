@@ -14,6 +14,8 @@
 //#include "MyServerPortalActor.h"
 #include "MyGameInstance.generated.h"
 
+
+
 USTRUCT(BlueprintType)
 struct FMySessionSearchResult {
 	GENERATED_USTRUCT_BODY()
@@ -136,7 +138,7 @@ USTRUCT(BlueprintType)
 struct FMyTeamInfo {
 
 	GENERATED_USTRUCT_BODY()
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
 		TArray<FMyMatchPlayer> players;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
 		FString title;
@@ -148,7 +150,7 @@ USTRUCT(BlueprintType)
 struct FMyTeamList {
 
 	GENERATED_USTRUCT_BODY()
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
 		TArray<FMyTeamInfo> teams;
 };
 
@@ -225,13 +227,13 @@ namespace MyGameInstanceState
 *
 */
 UCLASS()
-class UETOPIACOMPETITIVE_API UMyGameInstance : public UGameInstance
+class COMP_API UMyGameInstance : public UGameInstance
 {
 	GENERATED_UCLASS_BODY()
 
 
-	// Populated through config file
-	FString UEtopiaMode;
+		// Populated through config file
+		FString UEtopiaMode;
 	FString APIURL;
 	FString ServerAPIKey;  // Reusing these for matches as well, even though it's a match Key/Secret
 	FString ServerAPISecret;  // Reusing these for matches as well, even though it's a match Key/Secret
@@ -242,7 +244,7 @@ class UETOPIACOMPETITIVE_API UMyGameInstance : public UGameInstance
 	int32 minimumCurrencyRequired;
 	FString ServerTitle;
 	// Populated through the get match info API call
-	int32 admissionFee; 
+	int32 admissionFee;
 	FString MatchTitle;
 
 	// Populated through the online subsystem
@@ -264,9 +266,9 @@ class UETOPIACOMPETITIVE_API UMyGameInstance : public UGameInstance
 
 	// Use this for matchmaker/competitive
 	FMyMatchInfo MatchInfo;
-	
 
-	
+
+
 
 	bool PerformHttpRequest(void(UMyGameInstance::*delegateCallback)(FHttpRequestPtr, FHttpResponsePtr, bool), FString APIURI, FString ArgumentString);
 	bool PerformJsonHttpRequest(void(UMyGameInstance::*delegateCallback)(FHttpRequestPtr, FHttpResponsePtr, bool), FString APIURI, FString ArgumentString);
@@ -279,7 +281,7 @@ class UETOPIACOMPETITIVE_API UMyGameInstance : public UGameInstance
 public:
 
 	UPROPERTY(BlueprintReadOnly)
-	FMyTeamList TeamList;
+		FMyTeamList TeamList;
 
 	AMyGameSession* GetGameSession() const;
 	virtual void Init() override;
@@ -292,6 +294,8 @@ public:
 	*	@param bIsLAN are we searching LAN matches
 	*	@param bIsPresence are we searching presence sessions
 	*/
+
+	// TODO move this to playerController
 	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
 		bool StartMatchmaking(ULocalPlayer* PlayerOwner, FString MatchType);
 
@@ -389,7 +393,7 @@ public:
 	// In dedicated mode, it finishes with ActivateRequestComplete
 	// In competitive mode, it finishes with ActivateMatchPlayerRequestComplete
 	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
-	bool ActivatePlayer(class AMyPlayerController* NewPlayerController, FString playerKeyId, int32 playerID, const FUniqueNetIdRepl& UniqueId);
+		bool ActivatePlayer(class AMyPlayerController* NewPlayerController, FString playerKeyId, int32 playerID, const FUniqueNetIdRepl& UniqueId);
 	void ActivateRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 	void ActivateMatchPlayerRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 
@@ -452,7 +456,9 @@ public:
 		int32 MinimumKillsBeforeResultsSubmit;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
-	int32 teamCount;
+		int32 teamCount;
+
+	
 
 private:
 	UPROPERTY(config)
@@ -523,6 +529,12 @@ private:
 	// OSS delegates to handle
 	void HandleUserLoginChanged(int32 GameUserIndex, ELoginStatus::Type PreviousLoginStatus, ELoginStatus::Type LoginStatus, const FUniqueNetId& UserId);
 
+	void HandleUserLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error);
+
+	
+
+	
+
 	// We need to be aware of the HasBegunPlay function coming from gameState
 	// Certain things will fail (like spawning actors), if the loadLevel has not completed.
 
@@ -530,7 +542,7 @@ private:
 	void SpawnServerPortals();
 	TArray<AMyServerPortalActor*> ServerPortalActorReference;
 	*/
-	
+
 
 	/** Whether the match is online or not */
 	bool bRequestBeginPlayStarted;

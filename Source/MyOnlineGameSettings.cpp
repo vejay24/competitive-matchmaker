@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "UEtopiaCompetitive.h"
+#include "Comp.h"
 #include "MyOnlineGameSettings.h"
 
 

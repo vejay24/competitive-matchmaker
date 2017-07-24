@@ -7,7 +7,7 @@
 *
 */
 /**
-* General session settings for a Shooter game
+* General session settings 
 */
 class FMyOnlineSessionSettings : public FOnlineSessionSettings
 {
@@ -18,7 +18,7 @@ public:
 };
 
 /**
-* General search setting for a Shooter game
+* General search setting 
 */
 class FMyOnlineSearchSettings : public FOnlineSessionSearch
 {

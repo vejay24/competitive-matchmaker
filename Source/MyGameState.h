@@ -11,7 +11,7 @@
 *
 */
 UCLASS()
-class UETOPIACOMPETITIVE_API AMyGameState : public AGameState
+class COMP_API AMyGameState : public AGameState
 {
 	GENERATED_UCLASS_BODY()
 

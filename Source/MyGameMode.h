@@ -9,7 +9,7 @@
 *
 */
 UCLASS()
-class UETOPIACOMPETITIVE_API AMyGameMode : public AGameMode
+class COMP_API AMyGameMode : public AGameMode
 {
 	GENERATED_UCLASS_BODY()
 

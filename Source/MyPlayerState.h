@@ -49,8 +49,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FTextDelegate, FText, chatSender, F
 
 
 
+
 UCLASS()
-class UETOPIACOMPETITIVE_API AMyPlayerState : public APlayerState
+class COMP_API AMyPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 
@@ -71,6 +72,13 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 		FTextDelegate OnTextDelegate;
+
+	/** List of online friends 
+	struct FOnlineFriendsList
+	{
+		TArray< TSharedRef<FOnlineFriendUEtopia> > Friends;
+	};
+	*/
 
 	UPROPERTY(BlueprintReadOnly)
 		FString playerIdUEInternal;

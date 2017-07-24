@@ -129,13 +129,21 @@ void UMyGameInstance::Init()
 	const auto SessionInterface = OnlineSub->GetSessionInterface();
 	check(SessionInterface.IsValid());
 
+	const auto FriendsInterface = OnlineSub->GetFriendsInterface();
+	check(FriendsInterface.IsValid());
+
 	// bind any OSS delegates we needs to handle
 	for (int i = 0; i < MAX_LOCAL_PLAYERS; ++i)
 	{
 		IdentityInterface->AddOnLoginStatusChangedDelegate_Handle(i, FOnLoginStatusChangedDelegate::CreateUObject(this, &UMyGameInstance::HandleUserLoginChanged));
+		IdentityInterface->AddOnLoginCompleteDelegate_Handle(i, FOnLoginCompleteDelegate::CreateUObject(this, &UMyGameInstance::HandleUserLoginComplete));
+		// moved this to player controller.  We don't want it here.
+		//FriendsInterface->AddOnFriendsChangeDelegate_Handle(i, FOnFriendsChangeDelegate::CreateUObject(this, &UMyGameInstance::OnFriendsChange));
 	}
 
 	SessionInterface->AddOnSessionFailureDelegate_Handle(FOnSessionFailureDelegate::CreateUObject(this, &UMyGameInstance::HandleSessionFailure));
+
+	
 
 	OnEndSessionCompleteDelegate = FOnEndSessionCompleteDelegate::CreateUObject(this, &UMyGameInstance::OnEndSessionComplete);
 	//OnCreateSessionCompleteDelegate = FOnCreateSessionCompleteDelegate::CreateUObject(this, &UMyGameInstance::OnCreateSessionComplete);
@@ -248,7 +256,7 @@ bool UMyGameInstance::GetServerInfo()
 
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] GetServerInfo"));
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 	FString OutputString = "nonce=" + nonceString + "&encryption=" + encryption;
 
 	if (ServerSessionHostAddress.Len() > 1) {
@@ -323,7 +331,7 @@ bool UMyGameInstance::GetMatchInfo()
 
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] GetMatchInfo"));
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 	FString OutputString = "nonce=" + nonceString + "&encryption=" + encryption;
 
 	if (ServerSessionHostAddress.Len() > 1) {
@@ -433,7 +441,7 @@ void  UMyGameInstance::GetServerLinks()
 		if (bRequestBeginPlayStarted) {
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] GetServerLinks"));
 			FString nonceString = "10951350917635";
-			FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+			FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 			FString OutputString = "nonce=" + nonceString + "&encryption=" + encryption;
 			FString APIURI = "/api/v1/server/links";
 			bool requestSuccess = PerformHttpRequest(&UMyGameInstance::GetServerLinksComplete, APIURI, OutputString);
@@ -557,7 +565,7 @@ bool UMyGameInstance::ActivatePlayer(class AMyPlayerController* NewPlayerControl
 		else {
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] AuthorizePlayer - playerKeyId found in matchInfo"));
 			FString nonceString = "10951350917635";
-			FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+			FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 			FString OutputString = "nonce=" + nonceString + "&encryption=" + encryption;
 
 			FString APIURI = "/api/v1/match/player/" + playerKeyId + "/activate";;
@@ -593,7 +601,7 @@ bool UMyGameInstance::ActivatePlayer(class AMyPlayerController* NewPlayerControl
 			}
 			else {
 				//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] AuthorizePlayer - THERE WAS NO playerID incoming"));
-				// This is sadly what we expect to see.
+				// This is sadly what we expect to see.  
 			}
 
 			// add the player to the TArray as authorized=false
@@ -628,7 +636,7 @@ bool UMyGameInstance::ActivatePlayer(class AMyPlayerController* NewPlayerControl
 			//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] AuthorizePlayer - Debug 2d"));
 
 			FString nonceString = "10951350917635";
-			FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+			FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 
 			FString OutputString = "nonce=" + nonceString + "&encryption=" + encryption;
 
@@ -649,7 +657,7 @@ bool UMyGameInstance::ActivatePlayer(class AMyPlayerController* NewPlayerControl
 			//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] AuthorizePlayer - update existing record"));
 			PlayerRecord.ActivePlayers[ActivePlayerIndex].playerID = playerID;
 			FString nonceString = "10951350917635";
-			FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+			FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 
 			FString OutputString = "nonce=" + nonceString + "&encryption=" + encryption;
 
@@ -917,7 +925,7 @@ void UMyGameInstance::ActivateMatchPlayerRequestComplete(FHttpRequestPtr HttpReq
 							{
 								pc = Iterator->Get();
 
-								// go through the player states to find this player.
+								// go through the player states to find this player.  
 								// we need to set the playerId in here.
 
 								APlayerState* thisPlayerState = pc->PlayerState;
@@ -1082,7 +1090,7 @@ bool UMyGameInstance::GetGamePlayer(FString playerKeyId, bool bAttemptLock)
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] GetGamePlayer"));
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 	FString OutputString = "nonce=" + nonceString + "&encryption=" + encryption;
 
 	if (bAttemptLock) {
@@ -1226,7 +1234,7 @@ bool UMyGameInstance::SaveGamePlayer(FString playerKeyId, bool bAttemptUnLock)
 	}
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 								 //FString OutputString = "nonce=" + nonceString + "&encryption=" + encryption;
 
 								 //TSharedPtr<FJsonObject> PlayerJsonObj;
@@ -1334,7 +1342,7 @@ bool UMyGameInstance::DeActivatePlayer(int32 playerID)
 			//UE_LOG(LogTemp, Log, TEXT("Object is: %s"), *GetName());
 
 			FString nonceString = "10951350917635";
-			FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+			FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 
 
 			FString OutputString;
@@ -1353,7 +1361,7 @@ bool UMyGameInstance::DeActivatePlayer(int32 playerID)
 
 			//return requestSuccess;
 
-			// TODO cleanup any TravelAuthorizedActors that this player owns.
+			// TODO cleanup any TravelAuthorizedActors that this player owns.  
 
 		}
 		else {
@@ -1423,7 +1431,7 @@ void UMyGameInstance::DeActivateRequestComplete(FHttpRequestPtr HttpRequest, FHt
 		if (FJsonSerializer::Deserialize(JsonReader, JsonParsed))
 		{
 			bool Authorization = JsonParsed->GetBoolField("authorization");
-			//  We don't care too much about the results from this call.
+			//  We don't care too much about the results from this call.  
 			UE_LOG(LogTemp, Log, TEXT("Authorization"));
 			if (Authorization)
 			{
@@ -1444,7 +1452,7 @@ void UMyGameInstance::TransferPlayer(const FString& ServerKey, int32 playerID, b
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] TransferPlayer"));
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 	FString checkOnlyStr = "";
 	if (checkOnly) {
 		checkOnlyStr = "true";
@@ -1599,7 +1607,7 @@ bool UMyGameInstance::Purchase(FString playerKeyId, FString itemName, FString de
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] Purchase"));
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 
 	TSharedPtr<FJsonObject> PlayerJsonObj = MakeShareable(new FJsonObject);
 	PlayerJsonObj->SetStringField("nonce", "nonceString");
@@ -1697,7 +1705,7 @@ bool UMyGameInstance::Reward(FString playerKeyId, FString itemName, FString desc
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] Purchase"));
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 
 	TSharedPtr<FJsonObject> PlayerJsonObj = MakeShareable(new FJsonObject);
 	PlayerJsonObj->SetStringField("nonce", "nonceString");
@@ -1840,7 +1848,7 @@ bool UMyGameInstance::OutgoingChat(int32 playerID, FText message)
 	UE_LOG(LogTemp, Log, TEXT("message is: %s"), *message.ToString());
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 
 	FString OutputString;
 
@@ -1871,7 +1879,7 @@ void UMyGameInstance::OutgoingChatComplete(FHttpRequestPtr HttpRequest, FHttpRes
 			*HttpResponse->GetContentAsString());
 
 		FString JsonRaw = *HttpResponse->GetContentAsString();
-		//  We don't care too much about the results from this call.
+		//  We don't care too much about the results from this call.  
 	}
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [OutgoingChatComplete] Done!"));
 }
@@ -1915,7 +1923,7 @@ void UMyGameInstance::SubmitMatchMakerResultsComplete(FHttpRequestPtr HttpReques
 		if (FJsonSerializer::Deserialize(JsonReader, JsonParsed))
 		{
 			bool Authorization = JsonParsed->GetBoolField("authorization");
-			//  We don't care too much about the results from this call.
+			//  We don't care too much about the results from this call.  
 			UE_LOG(LogTemp, Log, TEXT("Authorization"));
 			if (Authorization)
 			{
@@ -1991,7 +1999,7 @@ bool UMyGameInstance::SubmitMatchResults()
 		UE_LOG(LogTemp, Log, TEXT("Object is: %s"), *GetName());
 
 		FString nonceString = "10951350917635";
-		FString encryption = "off";  // Allowing unencrypted on sandbox for now.
+		FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
 
 
 		FString OutputString;
@@ -2033,7 +2041,7 @@ void UMyGameInstance::SubmitMatchResultsComplete(FHttpRequestPtr HttpRequest, FH
 		if (FJsonSerializer::Deserialize(JsonReader, JsonParsed))
 		{
 			bool Authorization = JsonParsed->GetBoolField("authorization");
-			//  We don't care too much about the results from this call.
+			//  We don't care too much about the results from this call.  
 			UE_LOG(LogTemp, Log, TEXT("Authorization"));
 			if (Authorization)
 			{
@@ -2210,7 +2218,7 @@ void UMyGameInstance::OnSearchSessionsComplete(bool bWasSuccessful)
 			const FOnlineSessionSearchResult& Result = SearchResults[IdxResult];
 
 			// setup a ustruct for bp
-			// add the results to the TArray
+			// add the results to the TArray 
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] UMyGameInstance::OnSearchSessionsComplete: Adding to MySessionSearchResults"));
 			FMySessionSearchResult searchresult;
 			searchresult.OwningUserName = Result.Session.OwningUserName;
@@ -2718,6 +2726,34 @@ void UMyGameInstance::HandleUserLoginChanged(int32 GameUserIndex, ELoginStatus::
 	*/
 }
 
+void UMyGameInstance::HandleUserLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME INSTANCE UMyGameInstance::HandleUserLoginComplete"));
+	if (bWasSuccessful == false)
+	{
+		return;
+	}
+	const auto OnlineSub = IOnlineSubsystem::Get();
+	if (OnlineSub)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME INSTANCE UMyGameInstance::HandleUserLoginComplete OnlineSub"));
+		const auto FriendsInterface = OnlineSub->GetFriendsInterface();
+		if (FriendsInterface.IsValid())
+		{
+			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME INSTANCE UMyGameInstance::HandleUserLoginComplete FriendsInterface.IsValid()"));
+			TArray< TSharedRef<FOnlineFriend> > FriendList;
+			APlayerController* thisPlayer = GetFirstLocalPlayerController();
+			AMyPlayerController* thisMyPlayer = Cast<AMyPlayerController>(thisPlayer);
+			//FOnReadFriendsListComplete Delegate = FOnReadFriendsListComplete::CreateUObject(this, thisMyPlayer::OnReadFriendsComplete);
+			FriendsInterface->ReadFriendsList(LocalUserNum, "default", thisMyPlayer->OnReadFriendsListCompleteDelegate);
+
+			TSharedPtr <const FUniqueNetId> pid = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(0);
+			FriendsInterface->QueryRecentPlayers(*pid, "default");
+				//GetFriendsList(LocalUserNum, "default", FriendList);
+		}
+	}
+}
+
 void UMyGameInstance::HandleSignInChangeMessaging()
 {
 	// Master user signed out, go to initial state (if we aren't there already)
@@ -2743,6 +2779,8 @@ void UMyGameInstance::BeginLogin(FString InType, FString InId, FString InToken)
 	}
 
 }
+
+
 
 FMyActivePlayer* UMyGameInstance::getPlayerByPlayerId(int32 playerID)
 {
@@ -2848,7 +2886,7 @@ bool UMyGameInstance::RecordKill(int32 killerPlayerID, int32 victimPlayerID)
 		else {
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [RecordKill] Not a suicide"));
 
-			// get victim
+			// get victim 
 			bool victimPlayerIDFound = false;
 			int32 victimPlayerIndex = 0;
 

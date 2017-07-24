@@ -8,7 +8,7 @@
 #include "MyProjectile.generated.h"
 
 UCLASS()
-class UETOPIACOMPETITIVE_API AMyProjectile : public AStaticMeshActor
+class COMP_API AMyProjectile : public AStaticMeshActor
 {
 	GENERATED_BODY()
 
@@ -66,5 +66,5 @@ public:
 		float DesiredIntensity;
 
 
-	
+
 };

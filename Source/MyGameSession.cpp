@@ -26,6 +26,7 @@ AMyGameSession::AMyGameSession(const FObjectInitializer& ObjectInitializer)
 		OnDestroySessionCompleteDelegate = FOnDestroySessionCompleteDelegate::CreateUObject(this, &AMyGameSession::OnDestroySessionComplete);
 		OnFindSessionsCompleteDelegate = FOnFindSessionsCompleteDelegate::CreateUObject(this, &AMyGameSession::OnFindSessionsComplete);
 		OnJoinSessionCompleteDelegate = FOnJoinSessionCompleteDelegate::CreateUObject(this, &AMyGameSession::OnJoinSessionComplete);
+		OnMatchmakingStartedDelegate = FOnMatchmakingStartedDelegate::CreateUObject(this, &AMyGameSession::OnMatchmakingStartedComplete);
 		OnMatchmakingCompleteDelegate = FOnMatchmakingCompleteDelegate::CreateUObject(this, &AMyGameSession::OnMatchmakingComplete);
 		if (IsRunningDedicatedServer()) {
 			//RegisterServer();
@@ -38,6 +39,7 @@ AMyGameSession::AMyGameSession(const FObjectInitializer& ObjectInitializer)
 		{
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] AMyGameSession::AMyGameSession Session valid"));
 			Sessions->AddOnMatchmakingCompleteDelegate_Handle(OnMatchmakingCompleteDelegate);
+			Sessions->AddOnMatchmakingStartedDelegate_Handle(OnMatchmakingStartedDelegate);
 		}
 	}
 }
@@ -288,7 +290,7 @@ void AMyGameSession::OnMatchmakingComplete(FName SessionNameIncoming, bool bWasS
 		{
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION StartMatchmaking:  Sessions"));
 			//IOnlineSession* MMSession = Sessions->GetNamedSession(SessionNameIncoming.ToString());
-			FOnlineSessionSettings* MMSessionSettings = Sessions->GetSessionSettings(SessionNameIncoming);
+			//FOnlineSessionSettings* MMSessionSettings = Sessions->GetSessionSettings(SessionNameIncoming);
 
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION StartMatchmaking:  MMSessionSettings"));
 
@@ -587,4 +589,9 @@ void AMyGameSession::RegisterPlayer(APlayerController* NewPlayer, const TSharedP
 
 
 	}
+}
+
+void AMyGameSession::OnMatchmakingStartedComplete(FName matchType, bool success)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] AMyGameSession::OnMatchmakingStartedComplete"));
 }

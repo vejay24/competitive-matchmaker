@@ -98,7 +98,7 @@ void AMyProjectile::BeginPlay()
 
 	UGameplayStatics::SpawnEmitterAttached(
 		MyParticleSystem,                   //particle system
-		StaticMeshComponent,      //mesh to attach to
+		GetStaticMeshComponent(),      //mesh to attach to
 		FName("Head"),   //socket name
 		FVector(0, 0, 64),  //location relative to socket
 		FRotator(0, 0, 0), //rotation
@@ -140,7 +140,7 @@ void AMyProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponent, AAct
 
 		// TODO check team?  Friendly Fire.
 
-		// Create a damage event
+		// Create a damage event  
 		TSubclassOf<UDamageType> const ValidDamageTypeClass = TSubclassOf<UDamageType>(UDamageType::StaticClass());
 		FDamageEvent DamageEvent(ValidDamageTypeClass);
 

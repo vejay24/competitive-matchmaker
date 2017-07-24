@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "UEtopiaCompetitive.h"
+#include "Comp.h"
 #include "Net/UnrealNetwork.h"
 //#include "MyServerPortalActor.h"
 #include "MyGameState.h"
@@ -22,7 +22,7 @@ void AMyGameState::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutL
 	DOREPLIFETIME(AMyGameState, serverTitle);
 	DOREPLIFETIME(AMyGameState, ServerLinks);
 	DOREPLIFETIME(AMyGameState, TeamList);
-	
+
 }
 
 void AMyGameState::BeginPlay()

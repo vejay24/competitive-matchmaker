@@ -34,7 +34,7 @@ struct FMyGameSessionParams
 *
 */
 UCLASS()
-class UETOPIACOMPETITIVE_API AMyGameSession : public AGameSession
+class COMP_API AMyGameSession : public AGameSession
 {
 	GENERATED_BODY()
 
@@ -80,6 +80,8 @@ protected:
 	/** Delegate for destroying a session */
 	FOnDestroySessionCompleteDelegate OnDestroySessionCompleteDelegate;
 
+	/** Delegate for MATCHMAKER STARTED */
+	FOnMatchmakingStartedDelegate OnMatchmakingStartedDelegate;
 	/** Delegate for MATCHMAKER COMPLETED */
 	FOnMatchmakingCompleteDelegate OnMatchmakingCompleteDelegate;
 
@@ -122,6 +124,11 @@ protected:
 	* @param bWasSuccessful true if the async action completed without error, false if there was an error
 	*/
 	virtual void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
+
+	// Handle incoming Matchmaker Started notifications
+	void OnMatchmakingStartedComplete(FName matchType, bool success);
+
+
 	/**
 	* Delegate fired when a destroying an online session has completed
 	*
