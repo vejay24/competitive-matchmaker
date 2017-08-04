@@ -284,15 +284,15 @@ void AMyGameSession::OnMatchmakingComplete(FName SessionNameIncoming, bool bWasS
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
 	if (OnlineSub)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION StartMatchmaking:  OnlineSub"));
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION OnMatchmakingComplete:  OnlineSub"));
 		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
 		if (Sessions.IsValid())
 		{
-			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION StartMatchmaking:  Sessions"));
+			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION OnMatchmakingComplete:  Sessions"));
 			//IOnlineSession* MMSession = Sessions->GetNamedSession(SessionNameIncoming.ToString());
 			//FOnlineSessionSettings* MMSessionSettings = Sessions->GetSessionSettings(SessionNameIncoming);
 
-			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION StartMatchmaking:  MMSessionSettings"));
+			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION OnMatchmakingComplete:  MMSessionSettings"));
 
 			// Join
 			// We're artificially inserting the search results.

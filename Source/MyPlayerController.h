@@ -16,6 +16,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPartyInviteReceivedUETopiaDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPartyInviteReceivedUETopiaDisplayUIDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPartyInviteResponseReceivedUETopiaDisplayUIDelegate, FString, SenderUserTitle, FString, Response);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPartyDataReceivedUETopiaDisplayUIDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnChatChannelsChangedUETopiaDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnChatRoomMessageReceivedDisplayUIDelegate, FString, SenderUserKeyId, FString, ChatMessage, FString, chatRoomId);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnChatPrivateMessageReceivedDisplayUIDelegate, FString, SenderUserKeyId, FString, ChatMessage);
 
 USTRUCT(BlueprintType)
 struct FMyFriend {
@@ -85,6 +88,24 @@ struct FMyPartyInvitations {
 	GENERATED_USTRUCT_BODY()
 		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
 		TArray<FMyPartyInvitation> MyPartyInvitations;
+};
+
+USTRUCT(BlueprintType)
+struct FMyChatChannel {
+
+	GENERATED_USTRUCT_BODY()
+		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString chatChannelKeyId;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString chatChannelTitle;
+};
+
+USTRUCT(BlueprintType)
+struct FMyChatChannels {
+
+	GENERATED_USTRUCT_BODY()
+		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		TArray<FMyChatChannel> MyChatChannels;
 };
 
 /**
@@ -160,6 +181,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
 		void LeaveParty(const FString& PartyKeyId);
 
+	// Chat related
+	//UFUNCTION(BlueprintCallable, Category = "UETOPIA")
+		void RefreshChatChannelList(const FUniqueNetId& LocalUserId);
+
+	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
+		void CreateChatChannel(const FString& ChatChannelTitle);
+
+	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
+		void JoinChatChannel(const FString& ChatChannelTitle);
+
+	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
+		void SendChatMessage(int32 CurrentChannelIndex, FString ChatMessage);
+
+	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
+		void ExitChatChannel(int32 CurrentChannelIndex);
+
 	// MATCHMAKER
 	// Can't get these working in here.
 	//UFUNCTION(BlueprintCallable, Category = "UETOPIA")
@@ -203,6 +240,17 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "UETOPIA")
 	FOnPartyDataReceivedUETopiaDisplayUIDelegate OnPartyDataReceivedUETopiaDisplayUI;
 	
+	// when this fires, update the Chat Channel List
+	UPROPERTY(BlueprintAssignable, Category = "UETOPIA")
+	FOnChatChannelsChangedUETopiaDelegate OnChatChannelsChangedUETopia;
+
+	// when this fires, add a chat room message to the chat list
+	UPROPERTY(BlueprintAssignable, Category = "UETOPIA")
+	FOnChatRoomMessageReceivedDisplayUIDelegate OnChatRoomMessageReceivedDisplayUIDelegate;
+
+	// And this one is a private or system chat - not coming from a room.
+	UPROPERTY(BlueprintAssignable, Category = "UETOPIA")
+	FOnChatPrivateMessageReceivedDisplayUIDelegate OnChatPrivateMessageReceivedDisplayUIDelegate;
 
 	// Handle to our delegates
 	// This is bound into the online subsystem.
@@ -214,6 +262,7 @@ public:
 	//FOnPartyJoined FOnPartyJoinedUETopiaDelegate;
 	FOnPartyInviteReceived OnPartyInviteReceivedUEtopiaDelegate;
 	//FOnPartyInviteResponseReceived OnPartyInviteResponseReceivedComplete;
+	//FOnChatRoomMessageReceivedDisplayUIDelegate OnChatRoomMessageReceivedDisplayUIDelegate;
 
 	UPROPERTY(BlueprintReadOnly, Category = "UETOPIA")
 	TArray<FMyFriend> MyCachedFriends;
@@ -227,6 +276,9 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "UETOPIA")
 	TArray<FMyFriend> MyCachedPartyMembers;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UETOPIA")
+	FMyChatChannels MyCachedChatChannels;
 
 	// General Party Data
 
@@ -273,9 +325,23 @@ private:
 
 	void OnPartyInviteResponseReceivedComplete(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& SenderId, const EInvitationResponse Response);
 
+	// This is fired by the online subsystem when it receives new party data
 	// DECLARE_MULTICAST_DELEGATE_ThreeParams(F_PREFIX(OnPartyDataReceived), const FUniqueNetId& /*LocalUserId*/, const FOnlinePartyId& /*PartyId*/, const TSharedRef<FOnlinePartyData>& /*PartyData*/);
 
 	void OnPartyDataReceivedComplete(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const TSharedRef<FOnlinePartyData>& PartyData);
+
+	// THis is fired by the online subsystem when it receives notification that the user's chat room list has changed.
+	// ADD THIS TO /Engine/Plugins/Online/OnlineSubsystem/Source/Public/Interfaces/OnlineChatInterface.h
+	// DECLARE_MULTICAST_DELEGATE_TwoParams(FOnChatRoomListChanged, const FUniqueNetId& /*UserId*/, const FString& /*Error*/);
+	void OnChatRoomListReadComplete(const FUniqueNetId& LocalUserId, const FString& ErrorStr);
+
+	// This is fired by the online subsystem when it receives a new chat message coming from a room
+	//DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnChatRoomMessageReceived, const FUniqueNetId& /*UserId*/, const FChatRoomId& /*RoomId*/, const TSharedRef<FChatMessage>& /*ChatMessage*/);
+	void OnChatRoomMessageReceivedComplete(const FUniqueNetId& SenderUserId, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& ChatMessage);
+
+	// THis one is a private/system chat - not originating from a room
+	//DECLARE_MULTICAST_DELEGATE_TwoParams(FOnChatPrivateMessageReceived, const FUniqueNetId& /*UserId*/, const TSharedRef<FChatMessage>& /*ChatMessage*/);
+	void OnChatPrivateMessageReceivedComplete(const FUniqueNetId& SenderUserId, const TSharedRef<FChatMessage>& ChatMessage);
 
 	TArray<TSharedRef<IOnlinePartyJoinInfo>> PendingInvitesArray;
 };

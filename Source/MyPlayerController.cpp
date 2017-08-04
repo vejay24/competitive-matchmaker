@@ -44,6 +44,9 @@ AMyPlayerController::AMyPlayerController()
 	const auto PartyInterface = OnlineSub->GetPartyInterface();
 	check(PartyInterface.IsValid());
 
+	const auto ChatInterface = OnlineSub->GetChatInterface();
+	check(ChatInterface.IsValid());
+
 	FriendsInterface->AddOnFriendsChangeDelegate_Handle(0, FOnFriendsChangeDelegate::CreateUObject(this, &AMyPlayerController::OnFriendsChange));
 	FriendsInterface->AddOnInviteReceivedDelegate_Handle(FOnInviteReceivedDelegate::CreateUObject(this, &AMyPlayerController::OnFriendInviteReceivedComplete));
 	FriendsInterface->AddOnQueryRecentPlayersCompleteDelegate_Handle(FOnQueryRecentPlayersCompleteDelegate::CreateUObject(this, &AMyPlayerController::OnReadRecentPlayersComplete));
@@ -52,6 +55,10 @@ AMyPlayerController::AMyPlayerController()
 	PartyInterface->AddOnPartyInviteReceivedDelegate_Handle(FOnPartyInviteReceivedDelegate::CreateUObject(this, &AMyPlayerController::OnPartyInviteReceivedComplete));
 	PartyInterface->AddOnPartyInviteResponseReceivedDelegate_Handle(FOnPartyInviteResponseReceivedDelegate::CreateUObject(this, &AMyPlayerController::OnPartyInviteResponseReceivedComplete));
 	PartyInterface->AddOnPartyDataReceivedDelegate_Handle(FOnPartyDataReceivedDelegate::CreateUObject(this, &AMyPlayerController::OnPartyDataReceivedComplete));
+
+	ChatInterface->AddOnChatRoomMessageReceivedDelegate_Handle(FOnChatRoomMessageReceivedDelegate::CreateUObject(this, &AMyPlayerController::OnChatRoomMessageReceivedComplete));
+	ChatInterface->AddOnChatPrivateMessageReceivedDelegate_Handle(FOnChatPrivateMessageReceivedDelegate::CreateUObject(this, &AMyPlayerController::OnChatPrivateMessageReceivedComplete));
+	ChatInterface->AddOnChatRoomListReadCompleteDelegate_Handle(FOnChatRoomListReadCompleteDelegate::CreateUObject(this, &AMyPlayerController::OnChatRoomListReadComplete));
 
 	// Bind delegates into the OSS
 	OnReadFriendsListCompleteDelegate = FOnReadFriendsListComplete::CreateUObject(this, &AMyPlayerController::OnReadFriendsComplete);
@@ -573,3 +580,124 @@ void AMyPlayerController::OnPartyDataReceivedComplete(const FUniqueNetId& LocalU
 }
 
 
+void AMyPlayerController::RefreshChatChannelList(const FUniqueNetId& LocalUserId)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::RefreshChatChannelList"));
+	const auto OnlineSub = IOnlineSubsystem::Get();
+
+	// Dump our cached arrays
+	MyCachedChatChannels.MyChatChannels.Empty();
+
+	// Creating a local player where we can get the UserID from
+	//ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player);
+	//TSharedPtr<const FUniqueNetId> UserId = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(LocalPlayer->GetControllerId());
+
+	TArray<FChatRoomId> CachedRooms;
+
+	OnlineSub->GetChatInterface()->GetJoinedRooms(LocalUserId, CachedRooms);
+
+	// Loop over them and get the room info 
+	for (int32 Index = 0; Index < CachedRooms.Num(); Index++)
+	{
+		TSharedPtr<FChatRoomInfo> CachedChatRoomInfo = OnlineSub->GetChatInterface()->GetRoomInfo(LocalUserId, *CachedRooms[Index]);
+
+		FMyChatChannel CachedChatInstance;
+		CachedChatInstance.chatChannelKeyId = CachedChatRoomInfo->GetRoomId();
+		CachedChatInstance.chatChannelTitle = CachedChatRoomInfo->GetSubject();
+
+		// Populate our USTRUCT
+		MyCachedChatChannels.MyChatChannels.Add(CachedChatInstance);
+
+	}
+
+	//DELEGATE
+	OnChatChannelsChangedUETopia.Broadcast();
+	
+}
+
+void AMyPlayerController::CreateChatChannel(const FString& ChatChannelTitle)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::CreateChatChannel"));
+	const auto OnlineSub = IOnlineSubsystem::Get();
+
+	// Creating a local player where we can get the UserID from
+	ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player);
+	TSharedPtr<const FUniqueNetId> UserId = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(LocalPlayer->GetControllerId());
+
+	FChatRoomId ChatRoomId;  //unused at this point
+	FChatRoomConfig ChatRoomConfig;
+
+	OnlineSub->GetChatInterface()->CreateRoom(*UserId, ChatRoomId, ChatChannelTitle, ChatRoomConfig);
+}
+
+void AMyPlayerController::JoinChatChannel(const FString& ChatChannelTitle)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::JoinChatChannel"));
+	const auto OnlineSub = IOnlineSubsystem::Get();
+
+	// Creating a local player where we can get the UserID from
+	ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player);
+	TSharedPtr<const FUniqueNetId> UserId = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(LocalPlayer->GetControllerId());
+
+	FChatRoomId ChatRoomId;  //unused at this point
+	FChatRoomConfig ChatRoomConfig;
+
+	OnlineSub->GetChatInterface()->JoinPublicRoom(*UserId, ChatRoomId, ChatChannelTitle, ChatRoomConfig);
+}
+
+void AMyPlayerController::OnChatRoomListReadComplete(const FUniqueNetId& LocalUserId, const FString& ErrorStr)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::OnChatRoomListChanged"));
+	const auto OnlineSub = IOnlineSubsystem::Get();
+	RefreshChatChannelList(LocalUserId);
+}
+
+void AMyPlayerController::SendChatMessage(int32 CurrentChannelIndex, FString ChatMessage)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::SendChatMessage"));
+	const auto OnlineSub = IOnlineSubsystem::Get();
+
+	// Get the ChatChannel by index
+	//MyCachedChatChannels.MyChatChannels[CurrentChannelIndex].chatChannelKeyId;
+
+	// Creating a local player where we can get the UserID from
+	ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player);
+	TSharedPtr<const FUniqueNetId> UserId = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(LocalPlayer->GetControllerId());
+
+	OnlineSub->GetChatInterface()->SendRoomChat(*UserId, MyCachedChatChannels.MyChatChannels[CurrentChannelIndex].chatChannelKeyId, ChatMessage);
+	return;
+}
+
+void AMyPlayerController::ExitChatChannel(int32 CurrentChannelIndex)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::ExitChatChannel"));
+	const auto OnlineSub = IOnlineSubsystem::Get();
+	// Creating a local player where we can get the UserID from
+	ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player);
+	TSharedPtr<const FUniqueNetId> UserId = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(LocalPlayer->GetControllerId());
+
+	OnlineSub->GetChatInterface()->ExitRoom(*UserId, MyCachedChatChannels.MyChatChannels[CurrentChannelIndex].chatChannelKeyId);
+	return;
+}
+
+void AMyPlayerController::OnChatRoomMessageReceivedComplete(const FUniqueNetId& SenderUserId, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& ChatMessage)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::OnChatRoomMessageReceivedComplete"));
+
+	FString ChatMessageCombined = ChatMessage->GetNickname() + ": " + ChatMessage->GetBody();
+	FString SenderUserKeyId = SenderUserId.ToString();
+
+	OnChatRoomMessageReceivedDisplayUIDelegate.Broadcast(SenderUserKeyId, ChatMessageCombined, RoomId);
+}
+
+
+void AMyPlayerController::OnChatPrivateMessageReceivedComplete(const FUniqueNetId& SenderUserId, const TSharedRef<FChatMessage>& ChatMessage)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::OnChatRoomMessageReceivedComplete"));
+
+	//FString ChatMessageCombined = ChatMessage->GetNickname() + ": " + ChatMessage->GetBody();
+	FString ChatMessageCombined = ChatMessage->GetBody();
+	FString SenderUserKeyId = SenderUserId.ToString();
+
+	OnChatPrivateMessageReceivedDisplayUIDelegate.Broadcast(SenderUserKeyId, ChatMessageCombined);
+}
