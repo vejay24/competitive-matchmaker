@@ -594,4 +594,38 @@ void AMyGameSession::RegisterPlayer(APlayerController* NewPlayer, const TSharedP
 void AMyGameSession::OnMatchmakingStartedComplete(FName matchType, bool success)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] AMyGameSession::OnMatchmakingStartedComplete"));
+
+	// Setting up a SearchSettings, because we need it later
+
+	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
+	if (OnlineSub)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION OnMatchmakingStartedComplete:  OnlineSub"));
+
+		CurrentSessionParams.SessionName = "matchmaker-tounament";
+		CurrentSessionParams.bIsLAN = false;
+		CurrentSessionParams.bIsPresence = false;
+		OnlineSub->GetIdentityInterface()->GetUniquePlayerId(0);
+		//UE_LOG(LogTemp, Log, TEXT("UserId: %s"), *UserId->ToString());
+		CurrentSessionParams.UserId = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(0);
+
+		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
+		if (Sessions.IsValid())
+		{
+
+			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION OnMatchmakingStartedComplete:  Session Valid"));
+
+			if (CurrentSessionParams.UserId.IsValid())
+			{
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME SESSION OnMatchmakingStartedComplete:  CurrentSessionParams.UserId Valid"));
+				/*
+				If this is failing, it is possible that you have an incorrect online subsystem loaded.
+				Check your game.build.cs and make sure there aren't any stray online susbstems in there.
+				*/
+
+				SearchSettings = MakeShareable(new FMyOnlineSearchSettings(false, false));
+				//SearchSettings->QuerySettings.Set(SEARCH_KEYWORDS, matchType, EOnlineComparisonOp::Equals);
+			}
+		}
+	}
 }

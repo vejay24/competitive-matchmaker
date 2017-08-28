@@ -98,6 +98,7 @@ void AMyPlayerState::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & Ou
 	DOREPLIFETIME(AMyPlayerState, InventoryCubes);
 	DOREPLIFETIME(AMyPlayerState, Currency);
 	DOREPLIFETIME(AMyPlayerState, ServerPortalKeyIdsAuthorized);
+	DOREPLIFETIME(AMyPlayerState, TeamId);
 }
 
 /* handles copying properties when we do seamless travel */
@@ -112,6 +113,7 @@ void AMyPlayerState::CopyProperties(class APlayerState* PlayerState)
 		MyPlayerState->InventoryCubes = InventoryCubes;
 		MyPlayerState->playerKeyId = playerKeyId;
 		MyPlayerState->Currency = Currency;
+		MyPlayerState->TeamId = TeamId;
 	}
 
 }

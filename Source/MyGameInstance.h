@@ -144,6 +144,8 @@ struct FMyTeamInfo {
 		FString title;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
 		int32 number;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		int32 roundWinCount;
 };
 
 USTRUCT(BlueprintType)
@@ -266,7 +268,8 @@ class COMP_API UMyGameInstance : public UGameInstance
 
 	// Use this for matchmaker/competitive
 	FMyMatchInfo MatchInfo;
-
+	bool MatchStarted;
+	int32 RoundWinsNeededToWinMatch;
 
 
 
@@ -434,6 +437,9 @@ public:
 	// PlayerID is the internal Unreal engine Integer ID
 	FMyActivePlayer* getPlayerByPlayerId(int32 playerID);
 	FMyActivePlayer* getPlayerByPlayerKey(FString playerKeyId);
+
+	// Get Match player 
+	FMyMatchPlayer* getMatchPlayerByPlayerId(int32 playerID);
 
 	// Get a server out of our custom array struct
 	FMyServerLink* getServerByKey(FString serverKey);

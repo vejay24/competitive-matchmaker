@@ -5,6 +5,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Online.h"
 #include "OnlineFriendsInterface.h"
+#include "OnlineTournamentsInterface.h"
 #include "MyPlayerController.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFriendsChangedDelegate);
@@ -19,6 +20,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPartyDataReceivedUETopiaDisplayUIDelegate)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnChatChannelsChangedUETopiaDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnChatRoomMessageReceivedDisplayUIDelegate, FString, SenderUserKeyId, FString, ChatMessage, FString, chatRoomId);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnChatPrivateMessageReceivedDisplayUIDelegate, FString, SenderUserKeyId, FString, ChatMessage);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTournamentListChangedUETopiaDisplayUIDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTournamentDataReadUETopiaDisplayUIDelegate);
 
 USTRUCT(BlueprintType)
 struct FMyFriend {
@@ -106,6 +109,102 @@ struct FMyChatChannels {
 	GENERATED_USTRUCT_BODY()
 		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
 		TArray<FMyChatChannel> MyChatChannels;
+};
+
+
+/** Tournaments have a heirarchy of data:
+* Tournament List
+* -- Tournament
+* ---- Tournament Configuration
+* ---- Tournament Team List
+* ------ Tournament Team
+* ---- Tournament Round List
+* ------ Tournament Round
+* -------- Tournament Round Match List
+* ---------- Tournament Round Match
+*/
+
+USTRUCT(BlueprintType)
+struct FMyTournamentRoundMatch {
+
+	GENERATED_USTRUCT_BODY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString Status;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString Team1Title;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString Team1KeyId;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		bool Team1Winner;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		bool Team1Loser;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString Team2Title;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString Team2KeyId;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		bool Team2Winner;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		bool Team2Loser;
+
+};
+
+USTRUCT(BlueprintType)
+struct FMyTournamentRound {
+
+	GENERATED_USTRUCT_BODY()
+		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		int32 RoundIndex;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		TArray<FMyTournamentRoundMatch> RoundMatchList;
+
+};
+
+USTRUCT(BlueprintType)
+struct FMyTournamentTeam {
+
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString title;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString KeyId;
+
+
+};
+
+
+USTRUCT(BlueprintType)
+struct FMyTournament {
+
+	GENERATED_USTRUCT_BODY()
+		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		int32 tournamentId;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString tournamentKeyId;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString tournamentTitle;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		bool bIsGroupTournament;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString groupTitle;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString PrizeDistributionType;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString region;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		FString GameMode;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		int32 donationAmount;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		int32 playerBuyIn;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		TArray<FMyTournamentTeam> TeamList;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UETOPIA")
+		TArray<FMyTournamentRound> RoundList;
+
 };
 
 /**
@@ -197,6 +296,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
 		void ExitChatChannel(int32 CurrentChannelIndex);
 
+	// TOURNAMENT
+	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
+		void FetchJoinableTournaments();
+
+	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
+		void CreateTournament(const FString& TournamentTitle, const FString& GameMode, const FString& Region, int32 TeamMin, int32 TeamMax, int32 donationAmount, int32 playerBuyIn);
+
+	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
+		void ReadTournamentDetails(const FString& TournamentKeyId);
+
+	UFUNCTION(BlueprintCallable, Category = "UETOPIA")
+		void JoinTournament(const FString& TournamentKeyId);
+
 	// MATCHMAKER
 	// Can't get these working in here.
 	//UFUNCTION(BlueprintCallable, Category = "UETOPIA")
@@ -252,6 +364,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "UETOPIA")
 	FOnChatPrivateMessageReceivedDisplayUIDelegate OnChatPrivateMessageReceivedDisplayUIDelegate;
 
+	// when this fires, refresh the tournament UI list 
+	UPROPERTY(BlueprintAssignable, Category = "UETOPIA")
+	FOnTournamentListChangedUETopiaDisplayUIDelegate OnTournamentListChangedUETopiaDisplayUIDelegate;
+
+	// when this fires, refresh the tournament details panel
+	UPROPERTY(BlueprintAssignable, Category = "UETOPIA")
+		FOnTournamentDataReadUETopiaDisplayUIDelegate OnTournamentDataReadUETopiaDisplayUIDelegate;
+
 	// Handle to our delegates
 	// This is bound into the online subsystem.
 
@@ -263,6 +383,8 @@ public:
 	FOnPartyInviteReceived OnPartyInviteReceivedUEtopiaDelegate;
 	//FOnPartyInviteResponseReceived OnPartyInviteResponseReceivedComplete;
 	//FOnChatRoomMessageReceivedDisplayUIDelegate OnChatRoomMessageReceivedDisplayUIDelegate;
+
+	FOnCreateTournamentComplete OnCreateTournamentCompleteDelegate;
 
 	UPROPERTY(BlueprintReadOnly, Category = "UETOPIA")
 	TArray<FMyFriend> MyCachedFriends;
@@ -279,6 +401,13 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "UETOPIA")
 	FMyChatChannels MyCachedChatChannels;
+
+	// tournament cache
+	UPROPERTY(BlueprintReadOnly, Category = "UETOPIA")
+		TArray<FMyTournament> MyCachedTournaments;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UETOPIA")
+		FMyTournament MyCachedTournament;
 
 	// General Party Data
 
@@ -342,6 +471,14 @@ private:
 	// THis one is a private/system chat - not originating from a room
 	//DECLARE_MULTICAST_DELEGATE_TwoParams(FOnChatPrivateMessageReceived, const FUniqueNetId& /*UserId*/, const TSharedRef<FChatMessage>& /*ChatMessage*/);
 	void OnChatPrivateMessageReceivedComplete(const FUniqueNetId& SenderUserId, const TSharedRef<FChatMessage>& ChatMessage);
+
+	// Tournament stuff
+	//DECLARE_MULTICAST_DELEGATE_OneParam(F_PREFIX(OnTournamentListDataChanged), const FUniqueNetId& /*LocalUserId*/);
+	void OnTournamentListDataChanged(const FUniqueNetId& LocalUserId);
+
+	// The subsystem has finished reading the tournament details.  Copy them into our local struct and trigger the delegate to update the UI
+	void OnTournamentDetailsReadComplete();
+
 
 	TArray<TSharedRef<IOnlinePartyJoinInfo>> PendingInvitesArray;
 };

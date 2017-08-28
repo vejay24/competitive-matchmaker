@@ -4,7 +4,7 @@
 #include "UEtopiaCompetitiveCharacter.h"
 #include "Engine.h"
 //For the UGameplayStatics::SpawnEmitterAttached
-//#include "EngineKismetLibraryClasses.h"
+#include "MyPlayerState.h"
 #include "ParticleDefinitions.h"
 #include "MyProjectile.h"
 
@@ -118,34 +118,49 @@ void AMyProjectile::Tick(float DeltaTime)
 
 void AMyProjectile::setPlayerID(int32 playerID)
 {
-	UE_LOG(LogTemp, Log, TEXT("[LEET] [AMyBomb] [setPlayerID] %i "), playerID);
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AMyBomb] [setPlayerID] %i "), playerID);
 	ownerPlayerID = playerID;
+}
+
+void AMyProjectile::setTeamID(int32 teamID)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AMyBomb] [setTeamID] %i "), teamID);
+	ownerTeamID = teamID;
 }
 
 //void AMyBomb::setPlayerController(AMyPlayerController playerController)
 //{
-//	UE_LOG(LogTemp, Log, TEXT("[LEET] [AMyBomb] [setPlayerController] "));
+//	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AMyBomb] [setPlayerController] "));
 //	ownerPlayerController = playerController*;
 //}
 
 void AMyProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
-	//UE_LOG(LogTemp, Log, TEXT("[LEET] [AMyBomb] [OnHit] "));
+	//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AMyBomb] [OnHit] "));
 	// cast to our chatacter.
 
 
 	AUEtopiaCompetitiveCharacter* TheCharacter = Cast<AUEtopiaCompetitiveCharacter>(OtherActor);
 	if (TheCharacter) {
-		UE_LOG(LogTemp, Log, TEXT("[LEET] [AMyBomb] [OnHit] Cast to UEtopiaCompetitiveCharacter"));
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AMyBomb] [OnHit] Cast to UEtopiaCompetitiveCharacter"));
 
-		// TODO check team?  Friendly Fire.
+		// check team?  Friendly Fire.
 
-		// Create a damage event  
-		TSubclassOf<UDamageType> const ValidDamageTypeClass = TSubclassOf<UDamageType>(UDamageType::StaticClass());
-		FDamageEvent DamageEvent(ValidDamageTypeClass);
+		AMyPlayerState* playerS = Cast<AMyPlayerState>(TheCharacter->PlayerState);
+
+		if (playerS->TeamId != ownerTeamID)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AMyBomb] [OnHit] Found a character on a different team - causing damage"));
+
+			// Create a damage event  
+			TSubclassOf<UDamageType> const ValidDamageTypeClass = TSubclassOf<UDamageType>(UDamageType::StaticClass());
+			FDamageEvent DamageEvent(ValidDamageTypeClass);
 
 
-		TheCharacter->TakeDamageCustom(.3f, DamageEvent, this);
+			TheCharacter->TakeDamageCustom(.3f, DamageEvent, this);
+		}
+
+		
 
 
 
@@ -155,7 +170,7 @@ void AMyProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponent, AAct
 		bool destroyed = Destroy();
 	}
 
-	//UE_LOG(LogTemp, Log, TEXT("[LEET] [AMyBomb] [OnHit] OtherActor: %s"), OtherActor.);
+	//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AMyBomb] [OnHit] OtherActor: %s"), OtherActor.);
 }
 
 bool AMyProjectile::OnHit_Validate(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)

@@ -43,6 +43,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = " UETOPIA")
 		int32 ProjectileCount;
 
+	//moved to player state
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = " UETOPIA")
+	//	int32 TeamId;
+
 
 	/** Take damage, handle death */
 	virtual float TakeDamageCustom(float Damage, struct FDamageEvent const& DamageEvent, class AActor* DamageCauser);

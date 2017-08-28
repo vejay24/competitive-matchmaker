@@ -47,6 +47,10 @@ public:
 
 	// We want to keep track of who created the bomb so they get credit for any kills
 	int32 ownerPlayerID;
+
+	// also keep track of the team ID so teammates don't kill each other
+	int32 ownerTeamID;
+
 	//class AMyPlayerController ownerPlayerController;
 
 	// Sets default values for this actor's properties
@@ -59,6 +63,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	void setPlayerID(int32 playerID);
+	void setTeamID(int32 teamID);
 	//void setPlayerController(class AMyPlayerController ownerPlayerController);
 
 	/** the desired intensity for the light */

@@ -5,6 +5,7 @@
 #include "MyGameSession.h"
 #include "MyPlayerState.h"
 #include "MyPlayerController.h"
+#include "UEtopiaCompetitiveCharacter.h"
 //#include "MyServerPortalActor.h"
 //#include "MyTravelApprovedActor.h"
 //#include "MyRewardItemActor.h"
@@ -107,6 +108,7 @@ UMyGameInstance::UMyGameInstance(const FObjectInitializer& ObjectInitializer)
 	CubeStoreCost = 100;
 
 	MinimumKillsBeforeResultsSubmit = 3; // When a player has a score of x, submit match results
+	RoundWinsNeededToWinMatch = 3; // when a team wins 3 rounds submit match results
 
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME INSTANCE CONSTRUCTOR - DONE"));
 }
@@ -168,7 +170,7 @@ void UMyGameInstance::Init()
 	GetWorld()->GetTimerManager().SetTimer(ServerLinksTimerHandle, this, &UMyGameInstance::GetServerLinks, 20.0f, true);
 	GetWorld()->GetTimerManager().SetTimer(RewardSpawnTimerHandle, this, &UMyGameInstance::AttemptSpawnReward, SpawnRewardTimerSeconds, true);
 
-
+	MatchStarted = false;
 
 
 }
@@ -411,12 +413,22 @@ void UMyGameInstance::GetMatchInfoComplete(FHttpRequestPtr HttpRequest, FHttpRes
 						if (b == MatchInfo.players[i].teamId) {
 							UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [GetMatchInfo] Found player in this team"));
 							thisTeam.players.Add(MatchInfo.players[i]);
-							thisTeam.number = b;
+							thisTeam.number = MatchInfo.players[i].teamId;
 							thisTeam.title = MatchInfo.players[i].teamTitle;
+							thisTeam.roundWinCount = 0;
 						}
 					}
+
+					// add the team to both game instance and game state
+					TeamList.teams.Add(thisTeam);
 					uetopiaGameState->TeamList.teams.Add(thisTeam);
 				}
+
+				// set the number of kills required to end the game
+				// TODO change this to rounds needed to win - this could come out a tie
+				MinimumKillsBeforeResultsSubmit = static_cast<int>((float)(MatchInfo.players.Num()) * 1.5);
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [GetMatchInfo] MinimumKillsBeforeResultsSubmit: %d"), MinimumKillsBeforeResultsSubmit);
+
 
 				MatchTitle = JsonParsed->GetStringField("title");
 
@@ -556,6 +568,8 @@ bool UMyGameInstance::ActivatePlayer(class AMyPlayerController* NewPlayerControl
 				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] AuthorizePlayer - FOUND MATCHING playerKeyId"));
 				playerKeyIdFound = true;
 				ActivePlayerIndex = b;
+
+				// TODO set team
 			}
 		}
 
@@ -936,6 +950,13 @@ void UMyGameInstance::ActivateMatchPlayerRequestComplete(FHttpRequestPtr HttpReq
 									UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [ActivateMatchPlayerRequestComplete] - Found a playerState with matching playerKeyID"));
 									//UE_LOG(LogTemp, Log, TEXT("playerS->PlayerId: %d"), thisPlayerState->PlayerId);
 									MatchInfo.players[b].playerID = thisPlayerState->PlayerId;
+
+									// Also set the team!
+									//ACharacter* thisCharacter = pc->GetCharacter();
+									//AUEtopiaCompetitiveCharacter* compCharacter = Cast<AUEtopiaCompetitiveCharacter>(thisCharacter);
+
+									playerS->TeamId = JsonParsed->GetNumberField("team_id");
+									UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [ActivateMatchPlayerRequestComplete] - playerS->TeamId %d"), playerS->TeamId);
 								}
 							}
 
@@ -1008,18 +1029,22 @@ void UMyGameInstance::ActivateMatchPlayerRequestComplete(FHttpRequestPtr HttpReq
 					}
 
 
-					if (activeJoinedPlayers >= totalExpectedPlayers)
+					if (MatchStarted == false)
 					{
-						UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [ActivateMatchPlayerRequestComplete] - activeJoinedPlayers >= totalExpectedPlayers - starting timer"));
-						//matchStarted = true;
+						if (activeJoinedPlayers >= totalExpectedPlayers)
+						{
+							UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [ActivateMatchPlayerRequestComplete] - activeJoinedPlayers >= totalExpectedPlayers - starting timer"));
+							//matchStarted = true;
 
-						// do it after a timer
-						GetWorld()->GetTimerManager().SetTimer(AttemptStartMatchTimerHandle, this, &UMyGameInstance::AttemptStartMatch, 10.0f, false);
-						// travel to the third person map
-						//FString UrlString = TEXT("/Game/ThirdPersonCPP/Maps/ThirdPersonExampleMap?listen");
-						//GetWorld()->GetAuthGameMode()->bUseSeamlessTravel = true;
-						//GetWorld()->ServerTravel(UrlString);
+							// do it after a timer
+							GetWorld()->GetTimerManager().SetTimer(AttemptStartMatchTimerHandle, this, &UMyGameInstance::AttemptStartMatch, 10.0f, false);
+							// travel to the third person map
+							//FString UrlString = TEXT("/Game/ThirdPersonCPP/Maps/ThirdPersonExampleMap?listen");
+							//GetWorld()->GetAuthGameMode()->bUseSeamlessTravel = true;
+							//GetWorld()->ServerTravel(UrlString);
+						}
 					}
+					
 
 
 
@@ -1316,96 +1341,110 @@ bool UMyGameInstance::DeActivatePlayer(int32 playerID)
 		bool playerIDFound = false;
 		int32 ActivePlayerIndex = 0;
 		//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] check to see if this player is in the active list already"));
-
 		//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [AuthorizePlayer] ActivePlayers: %i"), ActivePlayers);
 
-		FMyActivePlayer* CurrentActivePlayer = getPlayerByPlayerId(playerID);
+		if (UEtopiaMode == "competitive") {
+			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] AuthorizePlayer - Mode set to competitive"));
 
-		if (CurrentActivePlayer) {
-			//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] DeAuthorizePlayer - existing playerID found"));
-
-			FString GamePlayerKeyIdString = CurrentActivePlayer->gamePlayerKeyId;
-
-			// update the TArray as authorized=false
-			FMyActivePlayer leavingplayer;
-			leavingplayer.playerID = playerID;
-			leavingplayer.authorized = false;
-			leavingplayer.playerKeyId = PlayerRecord.ActivePlayers[ActivePlayerIndex].playerKeyId;
-
-			FString playerKeyId = PlayerRecord.ActivePlayers[ActivePlayerIndex].playerKeyId;
-
-			// we don't want to totally overwrite it, just update it.
-			//PlayerRecord.ActivePlayers[ActivePlayerIndex] = leavingplayer;
-			PlayerRecord.ActivePlayers[ActivePlayerIndex].authorized = false;
-
-			//UE_LOG(LogTemp, Log, TEXT("playerKeyId: %d"), *playerKeyId);
-			//UE_LOG(LogTemp, Log, TEXT("Object is: %s"), *GetName());
-
-			FString nonceString = "10951350917635";
-			FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
-
-
-			FString OutputString;
-			// TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&OutputString);
-			// FJsonSerializer::Serialize(JsonObject.ToSharedRef(), JsonWriter);
-
-			// Build Params as text string
-			OutputString = "nonce=" + nonceString + "&encryption=" + encryption;
-			// urlencode the params
-
-			FString APIURI = "/api/v1/server/player/" + playerKeyId + "/deactivate";;
-
-			bool requestSuccess = PerformHttpRequest(&UMyGameInstance::DeActivateRequestComplete, APIURI, OutputString);
-
-			SaveGamePlayer(CurrentActivePlayer->playerKeyId, true);
-
-			//return requestSuccess;
-
-			// TODO cleanup any TravelAuthorizedActors that this player owns.  
+			FMyMatchPlayer* CurrentActivMatchPlayer = getMatchPlayerByPlayerId(playerID);
+			if (CurrentActivMatchPlayer) {
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] DeAuthorizePlayer - existing playerID found"));
+				// TODO match player deactivate
+			}
 
 		}
 		else {
-			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] DeAuthorizePlayer - Not found - Ignoring"));
-		}
+			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] AuthorizePlayer - Mode set to continuous"));
 
-		// Check to see if there are any more players, if not...  Save and prepare for server shutdown
-		int32 authorizedPlayerCount = getActivePlayerCount();
-		if (authorizedPlayerCount > 0)
-		{
-			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] DeAuthorizePlayer - There are still players authorized on this server."));
-		}
-		else {
-			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] DeAuthorizePlayer - No Authorized players round - moving to save."));
+			FMyActivePlayer* CurrentActivePlayer = getPlayerByPlayerId(playerID);
 
-			/*
-			bool FileIOSuccess;
-			bool allComponentsSaved;
-			FString FileName = "serversavedata.dat";
-			URamaSaveLibrary::RamaSave_SaveToFile(GetWorld(), FileName, FileIOSuccess, allComponentsSaved);
-			if (FileIOSuccess) {
-			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] File IO Success."));
+			if (CurrentActivePlayer) {
+				//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] DeAuthorizePlayer - existing playerID found"));
+
+				FString GamePlayerKeyIdString = CurrentActivePlayer->gamePlayerKeyId;
+
+				// update the TArray as authorized=false
+				FMyActivePlayer leavingplayer;
+				leavingplayer.playerID = playerID;
+				leavingplayer.authorized = false;
+				leavingplayer.playerKeyId = PlayerRecord.ActivePlayers[ActivePlayerIndex].playerKeyId;
+
+				FString playerKeyId = PlayerRecord.ActivePlayers[ActivePlayerIndex].playerKeyId;
+
+				// we don't want to totally overwrite it, just update it.
+				//PlayerRecord.ActivePlayers[ActivePlayerIndex] = leavingplayer;
+				PlayerRecord.ActivePlayers[ActivePlayerIndex].authorized = false;
+
+				//UE_LOG(LogTemp, Log, TEXT("playerKeyId: %d"), *playerKeyId);
+				//UE_LOG(LogTemp, Log, TEXT("Object is: %s"), *GetName());
+
+				FString nonceString = "10951350917635";
+				FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
+
+
+				FString OutputString;
+				// TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&OutputString);
+				// FJsonSerializer::Serialize(JsonObject.ToSharedRef(), JsonWriter);
+
+				// Build Params as text string
+				OutputString = "nonce=" + nonceString + "&encryption=" + encryption;
+				// urlencode the params
+
+				FString APIURI = "/api/v1/server/player/" + playerKeyId + "/deactivate";;
+
+				bool requestSuccess = PerformHttpRequest(&UMyGameInstance::DeActivateRequestComplete, APIURI, OutputString);
+
+				SaveGamePlayer(CurrentActivePlayer->playerKeyId, true);
+
+				//return requestSuccess;
+
+				// TODO cleanup any TravelAuthorizedActors that this player owns.  
+
 			}
 			else {
-			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] File IO FAIL."));
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] DeAuthorizePlayer - Not found - Ignoring"));
 			}
-			*/
+
+			// Check to see if there are any more players, if not...  Save and prepare for server shutdown
+			int32 authorizedPlayerCount = getActivePlayerCount();
+			if (authorizedPlayerCount > 0)
+			{
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] DeAuthorizePlayer - There are still players authorized on this server."));
+			}
+			else {
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] DeAuthorizePlayer - No Authorized players found - moving to save."));
+
+				/*
+				bool FileIOSuccess;
+				bool allComponentsSaved;
+				FString FileName = "serversavedata.dat";
+				URamaSaveLibrary::RamaSave_SaveToFile(GetWorld(), FileName, FileIOSuccess, allComponentsSaved);
+				if (FileIOSuccess) {
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] File IO Success."));
+				}
+				else {
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] File IO FAIL."));
+				}
+				*/
 
 
 
-			//Return the server back to the lobbyLevel in case a user logs in before the server is decomissioned
+				//Return the server back to the lobbyLevel in case a user logs in before the server is decomissioned
 
-			FString UrlString = TEXT("/Game/LobbyLevel?listen");
-			//World'/Game/LobbyLevel.LobbyLevel'
-			GetWorld()->GetAuthGameMode()->bUseSeamlessTravel = true;
-			GetWorld()->ServerTravel(UrlString);
+				FString UrlString = TEXT("/Game/LobbyLevel?listen");
+				//World'/Game/LobbyLevel.LobbyLevel'
+				GetWorld()->GetAuthGameMode()->bUseSeamlessTravel = true;
+				GetWorld()->ServerTravel(UrlString);
 
-			// Reset our playstarted flag
-			bRequestBeginPlayStarted = false;
+				// Reset our playstarted flag
+				bRequestBeginPlayStarted = false;
 
-			// Reset the ServerPortal Actor Array
-			//ServerPortalActorReference.Empty();
+				// Reset the ServerPortal Actor Array
+				//ServerPortalActorReference.Empty();
 
+			}
 		}
+		
 	}
 	return true;
 
@@ -2741,15 +2780,16 @@ void UMyGameInstance::HandleUserLoginComplete(int32 LocalUserNum, bool bWasSucce
 		if (FriendsInterface.IsValid())
 		{
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] GAME INSTANCE UMyGameInstance::HandleUserLoginComplete FriendsInterface.IsValid()"));
-			TArray< TSharedRef<FOnlineFriend> > FriendList;
-			APlayerController* thisPlayer = GetFirstLocalPlayerController();
-			AMyPlayerController* thisMyPlayer = Cast<AMyPlayerController>(thisPlayer);
-			//FOnReadFriendsListComplete Delegate = FOnReadFriendsListComplete::CreateUObject(this, thisMyPlayer::OnReadFriendsComplete);
-			FriendsInterface->ReadFriendsList(LocalUserNum, "default", thisMyPlayer->OnReadFriendsListCompleteDelegate);
 
-			TSharedPtr <const FUniqueNetId> pid = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(0);
-			FriendsInterface->QueryRecentPlayers(*pid, "default");
-				//GetFriendsList(LocalUserNum, "default", FriendList);
+			// ALl of this moved to OnlineSubsystem-> Connect
+
+			//TArray< TSharedRef<FOnlineFriend> > FriendList;
+			//APlayerController* thisPlayer = GetFirstLocalPlayerController();
+			//AMyPlayerController* thisMyPlayer = Cast<AMyPlayerController>(thisPlayer);
+			//FriendsInterface->ReadFriendsList(LocalUserNum, "default", thisMyPlayer->OnReadFriendsListCompleteDelegate);
+
+			//TSharedPtr <const FUniqueNetId> pid = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(0);
+			//FriendsInterface->QueryRecentPlayers(*pid, "default");
 		}
 	}
 }
@@ -2822,6 +2862,31 @@ FMyActivePlayer* UMyGameInstance::getPlayerByPlayerKey(FString playerKeyId)
 	}
 	return nullptr;
 }
+
+FMyMatchPlayer* UMyGameInstance::getMatchPlayerByPlayerId(int32 playerID)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] getMatchPlayerByPlayerID"));
+	for (int32 b = 0; b < MatchInfo.players.Num(); b++)
+	{
+		if (MatchInfo.players[b].playerID) {
+			UE_LOG(LogTemp, Log, TEXT("Comparing playerID: %d MatchInfo.players[b].playerID:%d"),
+				playerID,
+				MatchInfo.players[b].playerID);
+
+			if (MatchInfo.players[b].playerID == playerID) {
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] getMatchPlayerByPlayerID - FOUND MATCHING playerID"));
+				FMyMatchPlayer* playerPointer = &MatchInfo.players[b];
+				return playerPointer;
+			}
+		}
+		else {
+			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] getMatchPlayerByPlayerId - MatchInfo.players[b].playerID DOES NOT EXIST"));
+		}
+
+	}
+	return nullptr;
+}
+
 
 int32 UMyGameInstance::getActivePlayerCount()
 {
@@ -2937,12 +3002,16 @@ bool UMyGameInstance::RecordKill(int32 killerPlayerID, int32 victimPlayerID)
 
 		}
 
+		AGameState* gameState = Cast<AGameState>(GetWorld()->GetGameState());
+		AMyGameState* uetopiaGameState = Cast<AMyGameState>(gameState);
+
+
 		// Check to see if the round is over
 		// reset the level if one team is all dead
 		// If you have a game that has more than two teams you should rewrite this for your end round logic
 		bool anyTeamDead = false;
 		int32 stillAliveTeamId = 0;
-		for (int32 b = 0; b <= teamCount; b++) // b is team index
+		for (int32 b = 0; b <= teamCount; b++) // b is the team ID we're checking
 		{
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [CalculateNewRank] Checking team %d"), b);
 			bool thisTeamAlive = false;
@@ -2972,6 +3041,16 @@ bool UMyGameInstance::RecordKill(int32 killerPlayerID, int32 victimPlayerID)
 
 		}
 
+		// Get the index from our TeamList struct - it might not be the same index!
+		int32 TeamStillAliveTeamListIndex = 0;
+		for (int32 b = 0; b < TeamList.teams.Num(); b++)
+		{
+			if (TeamList.teams[b].number == stillAliveTeamId)
+			{
+				TeamStillAliveTeamListIndex = b;
+			}
+		}
+
 
 		if (anyTeamDead) {
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [RecordKill] - Detected dead team"));
@@ -2982,39 +3061,31 @@ bool UMyGameInstance::RecordKill(int32 killerPlayerID, int32 victimPlayerID)
 				if (MatchInfo.players[b].teamId == stillAliveTeamId) {
 					MatchInfo.players[b].score = MatchInfo.players[b].score + 200;
 					MatchInfo.players[b].experience = MatchInfo.players[b].experience + 75;
-
+					
 				}
 			}
+
+			TeamList.teams[TeamStillAliveTeamListIndex].roundWinCount = TeamList.teams[TeamStillAliveTeamListIndex].roundWinCount + 1;
 
 
 		}
 
+
+
 		//Check to see if the game is over
-		if (roundKillsTotal >= MinimumKillsBeforeResultsSubmit) {
+		if (TeamList.teams[TeamStillAliveTeamListIndex].roundWinCount >= RoundWinsNeededToWinMatch)
+		{
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [RecordKill] - Ending the Game"));
 
-			int32 highestRoundKills = 0;
-			int32 highestScoreTeamId = 0;
-
-			// determine the highest roundKills
-			for (int32 b = 0; b < MatchInfo.players.Num(); b++)
-			{
-				if (MatchInfo.players[b].roundKills > highestRoundKills) {
-					highestScoreTeamId = MatchInfo.players[b].teamId;
-					highestRoundKills = MatchInfo.players[b].roundKills;
-
-				}
-			}
 			//set winner for the winning team
 			for (int32 b = 0; b < MatchInfo.players.Num(); b++)
 			{
-				if (MatchInfo.players[b].teamId == highestScoreTeamId) {
+				if (MatchInfo.players[b].teamId == stillAliveTeamId) {
 					MatchInfo.players[b].win = true;
 					MatchInfo.players[b].score = MatchInfo.players[b].score + 400;
 					MatchInfo.players[b].experience = MatchInfo.players[b].experience + 200;
 				}
 			}
-
 
 			bool gamesubmitted = SubmitMatchMakerResults();
 
@@ -3024,8 +3095,6 @@ bool UMyGameInstance::RecordKill(int32 killerPlayerID, int32 victimPlayerID)
 			{
 				DeActivatePlayer(MatchInfo.players[b].playerID);
 			}
-
-
 
 			// We might need some kind of delay in here because we're going to wipe this data.  plz don't crash
 
@@ -3039,9 +3108,10 @@ bool UMyGameInstance::RecordKill(int32 killerPlayerID, int32 victimPlayerID)
 			for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 			{
 				pc = Iterator->Get();
-				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [ActivateRequestComplete] - kicking back to login"));
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] [RecordKill] - kicking back to login"));
 				pc->ClientTravel(UrlString, ETravelType::TRAVEL_Absolute);
 			}
+
 
 
 		}
@@ -3270,6 +3340,7 @@ void UMyGameInstance::AttemptStartMatch()
 	{
 		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [UMyGameInstance] AttemptStartMatch - Dedicated server found."));
 		// travel to the third person map
+		MatchStarted = true;
 		FString UrlString = TEXT("/Game/Maps/ThirdPersonExampleMap?listen");
 		GetWorld()->GetAuthGameMode()->bUseSeamlessTravel = true;
 		GetWorld()->ServerTravel(UrlString);

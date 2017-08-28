@@ -5,6 +5,7 @@
 #include "UnrealNetwork.h"
 #include "MyProjectile.h"
 #include "MyPlayerController.h"
+#include "MyPlayerState.h"
 #include "MyGameInstance.h"
 #include "UEtopiaCompetitiveCharacter.h"
 
@@ -222,9 +223,9 @@ bool AUEtopiaCompetitiveCharacter::hasProjectiles()
 
 void AUEtopiaCompetitiveCharacter::ServerAttemptSpawnProjectile_Implementation()
 {
-	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AUEtopiaCompetitiveCharacter] [ServerAttemptSpawnBomb_Implementation]  "));
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AUEtopiaCompetitiveCharacter] [ServerAttemptSpawnProjectile_Implementation]  "));
 	if (CanFire()) {
-		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AUEtopiaCompetitiveCharacter] [ServerAttemptSpawnBomb_Implementation] CanFire "));
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AUEtopiaCompetitiveCharacter] [ServerAttemptSpawnProjectile_Implementation] CanFire "));
 		float placementDistance = 200.0f;
 		FVector ShootDir = GetActorForwardVector();
 		FVector Origin = GetActorLocation();
@@ -233,9 +234,13 @@ void AUEtopiaCompetitiveCharacter::ServerAttemptSpawnProjectile_Implementation()
 		// Spawn the actor
 		//Spawn a bomb
 		FTransform const SpawnTransform(ShootDir.Rotation(), spawnlocation);
-		int32 playerID = PlayerState->PlayerId;
+		AMyPlayerState* playerS = Cast<AMyPlayerState>(PlayerState);
+		int32 playerID = playerS->PlayerId;
 		AMyProjectile* const ProjectileActor = GetWorld()->SpawnActor<AMyProjectile>(AMyProjectile::StaticClass(), SpawnTransform);
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AUEtopiaCompetitiveCharacter] [ServerAttemptSpawnProjectile_Implementation] PlayerState->PlayerId %d "), playerS->PlayerId);
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AUEtopiaCompetitiveCharacter] [ServerAttemptSpawnProjectile_Implementation] PlayerState->TeamId %d "), playerS->TeamId);
 		ProjectileActor->setPlayerID(playerID);
+		ProjectileActor->setTeamID(playerS->TeamId);
 	}
 
 

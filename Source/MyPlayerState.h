@@ -97,6 +97,12 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly)
 		int32 Currency;
 
+	UPROPERTY(Replicated, BlueprintReadOnly)
+		int32 TeamId;
+
+	UPROPERTY(Replicated, BlueprintReadOnly)
+		FString teamTitle;
+
 	// Variables set via get game player api call
 
 	// doubles are not supported.
