@@ -8,6 +8,11 @@
 #include "OnlineTournamentsInterface.h"
 #include "MyPlayerController.generated.h"
 
+// 4.16 login flow thing
+#ifndef UETOPIA_SUBSYSTEM
+#define UETOPIA_SUBSYSTEM FName(TEXT("UEtopia"))
+#endif
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFriendsChangedDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFriendInviteReceivedUETopiaDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFriendInviteReceivedUETopiaDisplayUIDelegate, FString, SenderUserTitle, FString, SenderUserKeyId);
@@ -351,7 +356,7 @@ public:
 	// when this fires, update the party UI widget
 	UPROPERTY(BlueprintAssignable, Category = "UETOPIA")
 	FOnPartyDataReceivedUETopiaDisplayUIDelegate OnPartyDataReceivedUETopiaDisplayUI;
-	
+
 	// when this fires, update the Chat Channel List
 	UPROPERTY(BlueprintAssignable, Category = "UETOPIA")
 	FOnChatChannelsChangedUETopiaDelegate OnChatChannelsChangedUETopia;
@@ -364,7 +369,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "UETOPIA")
 	FOnChatPrivateMessageReceivedDisplayUIDelegate OnChatPrivateMessageReceivedDisplayUIDelegate;
 
-	// when this fires, refresh the tournament UI list 
+	// when this fires, refresh the tournament UI list
 	UPROPERTY(BlueprintAssignable, Category = "UETOPIA")
 	FOnTournamentListChangedUETopiaDisplayUIDelegate OnTournamentListChangedUETopiaDisplayUIDelegate;
 
@@ -424,7 +429,18 @@ public:
 
 
 private:
-	
+
+	// 4.16 login flow stuff
+	void FOnPopupDismissed(const TSharedRef<SWidget>& DisplayWidget);
+	ILoginFlowManager::FOnPopupDismissed OnDisplayLoginWidget(const TSharedRef<SWidget>& DisplayWidget);
+	void OnDismissLoginWidget();
+	FReply CancelLoginFlow();
+
+	TSharedPtr<ILoginFlowManager> LoginFlowManager;
+
+	TSharedPtr<class SWebBrowser> WebBrowserWidget;
+
+	TSharedPtr<SWidget> DisplayWidgetRef;
 
 	// This is fired by the Online subsystem after it polls the friend list.
 	void OnReadFriendsComplete(int32 LocalPlayer, bool bWasSuccessful, const FString& ListName, const FString& ErrorStr);

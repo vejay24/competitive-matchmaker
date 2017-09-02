@@ -3,6 +3,8 @@
 #include "Comp.h"
 #include "MyGameInstance.h"
 //#include "OnlinePartyUEtopia.h"
+#include "ILoginFlowModule.h"
+#include "ILoginFlowManager.h"
 #include "MyPlayerState.h"
 #include "MyPlayerController.h"
 
@@ -75,15 +77,79 @@ AMyPlayerController::AMyPlayerController()
 	//check(NotificationHandler.IsValid());
 
 
-	// Why is this not working?
-	//NotificationHandler->AddPlayerNotificationBinding_Handle()
+	// Initialize the login flow UI code
 
-	//OnlineSub->GetOnlineNotificationTransportManager()->
+
+
+	UWorld* World = GetWorld();
+	FName FacebookIdentifier = Online::GetUtils()->GetOnlineIdentifier(World, FACEBOOK_SUBSYSTEM);
+	FName GoogleIdentifier = Online::GetUtils()->GetOnlineIdentifier(World, GOOGLE_SUBSYSTEM);
+	FName UEtopiaIdentifier = Online::GetUtils()->GetOnlineIdentifier(World, UETOPIA_SUBSYSTEM);
+
+
+
+
+	ILoginFlowModule& LoginFlowModule = ILoginFlowModule::Get();
+
+	LoginFlowManager = LoginFlowModule.CreateLoginFlowManager();
+
+	if (!LoginFlowManager->AddLoginFlow(FacebookIdentifier, ILoginFlowManager::FOnDisplayPopup::CreateUObject(this, &AMyPlayerController::OnDisplayLoginWidget)))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No Facebook subsystem configured. It will be unavailable"));
+	}
+	if (!LoginFlowManager->AddLoginFlow(GoogleIdentifier, ILoginFlowManager::FOnDisplayPopup::CreateUObject(this, &AMyPlayerController::OnDisplayLoginWidget)))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No Google subsystem configured. It will be unavailable"));
+	}
+	if (!LoginFlowManager->AddLoginFlow(UEtopiaIdentifier, ILoginFlowManager::FOnDisplayPopup::CreateUObject(this, &AMyPlayerController::OnDisplayLoginWidget)))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No UEtopia subsystem configured. It will be unavailable"));
+	}
 
 	// Start a player as captain so they can join matchmaker queue without being in a party first
 	IAmCaptain = true;
 
 
+}
+
+
+void AMyPlayerController::FOnPopupDismissed(const TSharedRef<SWidget>& DisplayWidget)
+{
+	// create a login flow UI which contains the slate widget or native host widget blueprint implementable
+	///...
+	//return a FOnPopupDismissed delegate that the underlying system will call when the screen is closed for any reason.
+}
+
+ILoginFlowManager::FOnPopupDismissed AMyPlayerController::OnDisplayLoginWidget(const TSharedRef<SWidget>& DisplayWidget)
+{
+	// create a login flow UI which contains the slate widget or native host widget blueprint implementable
+
+	GEngine->GameViewport->AddViewportWidgetContent(DisplayWidget);
+
+	// store the reference to the widget
+	DisplayWidgetRef = DisplayWidget;
+
+		//return a FOnPopupDismissed delegate that the underlying system will call when the screen is closed for any reason.
+	return ILoginFlowManager::FOnPopupDismissed::CreateUObject(this, &AMyPlayerController::OnDismissLoginWidget);
+}
+
+void AMyPlayerController::OnDismissLoginWidget()
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AMyPlayerController] OnDismissLoginWidget"));
+	// Widget dismissed by login flow or possibly game related Blueprint code
+	// For slate typically
+	//Overlay->RemoveSlot(LoginFlow.ToSharedRef());
+	GEngine->GameViewport->RemoveViewportWidgetContent(DisplayWidgetRef->AsShared());
+}
+
+FReply AMyPlayerController::CancelLoginFlow()
+{
+	// Blueprint callable if outer UI has way to shutdown login flow
+	//if (LoginFlowManager.IsValid())
+	//{
+	//	LoginFlowManager->CancelLoginFlow();
+	//}
+	return FReply::Handled();
 }
 
 void AMyPlayerController::TravelPlayer(const FString& ServerUrl)
@@ -252,7 +318,7 @@ void AMyPlayerController::InviteUserToFriends(const FString& UserKeyId)
 	FString UserToInviteKeyId = UserToInviteId.Get()->ToString();
 	UE_LOG_ONLINE(Log, TEXT("UserToInviteKeyId: %s"), *UserToInviteKeyId);
 
-	// Tell the OSS to send the invite 
+	// Tell the OSS to send the invite
 	OnlineSub->GetFriendsInterface()->SendInvite(0, *UserToInviteId, "default");
 
 }
@@ -394,9 +460,9 @@ void AMyPlayerController::InviteUserToParty(const FString& PartyKeyId, const FSt
 	FOnlinePartyData PartyData = FOnlinePartyData();
 	PartyData.SetAttribute("key_id", PartyKeyId);
 
-	// Tell the OSS to send the invite 
+	// Tell the OSS to send the invite
 	OnlineSub->GetPartyInterface()->SendInvitation(*UserId, PartyId, PartyInviteRecipient, PartyData, OnSendPartyInvitationComplete);
-	
+
 }
 
 void AMyPlayerController::OnPartyInviteReceivedComplete(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& SenderId)
@@ -408,7 +474,7 @@ void AMyPlayerController::OnPartyInviteReceivedComplete(const FUniqueNetId& Loca
 	const auto OnlineSub = IOnlineSubsystem::Get();
 	OnlineSub->GetPartyInterface()->GetPendingInvites(LocalUserId, PendingInvitesArray);
 
-	// Now we need to do something with it.  
+	// Now we need to do something with it.
 	// Just going to stick it in a Struct
 
 	MyCachedPartyInvitations.Empty();
@@ -461,7 +527,7 @@ void AMyPlayerController::OnPartyInviteResponseReceivedComplete(const FUniqueNet
 		if (MyCachedFriends[Index].playerKeyId == SenderId.ToString())
 		{
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::OnPartyInviteResponseReceivedComplete - Found Match"));
-			
+
 			senderTitle = MyCachedFriends[Index].playerTitle;
 		}
 	}
@@ -555,7 +621,7 @@ void AMyPlayerController::OnPartyDataReceivedComplete(const FUniqueNetId& LocalU
 		FVariantData userTitle;
 		FVariantData userKeyId;
 		FVariantData captain;
-		
+
 
 
 		FMyFriend ThisPartyMember;
@@ -570,7 +636,7 @@ void AMyPlayerController::OnPartyDataReceivedComplete(const FUniqueNetId& LocalU
 
 		UE_LOG_ONLINE(Log, TEXT("captain.ToString(): %s"), *captain.ToString());
 
-		
+
 
 		// TODO add captain to partymember
 		//ThisPartyMember.
@@ -584,7 +650,7 @@ void AMyPlayerController::OnPartyDataReceivedComplete(const FUniqueNetId& LocalU
 		UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::OnPartyDataReceivedComplete - No party members - resetting captain status"));
 		IAmCaptain = true;
 	}
-	
+
 	// delegate
 	OnPartyDataReceivedUETopiaDisplayUI.Broadcast();
 }
@@ -606,7 +672,7 @@ void AMyPlayerController::RefreshChatChannelList(const FUniqueNetId& LocalUserId
 
 	OnlineSub->GetChatInterface()->GetJoinedRooms(LocalUserId, CachedRooms);
 
-	// Loop over them and get the room info 
+	// Loop over them and get the room info
 	for (int32 Index = 0; Index < CachedRooms.Num(); Index++)
 	{
 		TSharedPtr<FChatRoomInfo> CachedChatRoomInfo = OnlineSub->GetChatInterface()->GetRoomInfo(LocalUserId, *CachedRooms[Index]);
@@ -622,7 +688,7 @@ void AMyPlayerController::RefreshChatChannelList(const FUniqueNetId& LocalUserId
 
 	//DELEGATE
 	OnChatChannelsChangedUETopia.Broadcast();
-	
+
 }
 
 void AMyPlayerController::CreateChatChannel(const FString& ChatChannelTitle)
@@ -740,7 +806,7 @@ void AMyPlayerController::CreateTournament(const FString& TournamentTitle, const
 	TSharedPtr<const FUniqueNetId> UserId = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(LocalPlayer->GetControllerId());
 
 	// const FUniqueNetId& LocalUserId, const FOnlinePartyTypeId TournamentTypeId, const FTournamentConfiguration& TournamentConfig, const FOnCreateTournamentComplete& Delegate = FOnCreateTournamentComplete()
-	
+
 	OnlineSub->GetTournamentInterface()->CreateTournament(*UserId, PartyTypeId, TournamentConfiguration, OnCreateTournamentCompleteDelegate);
 		//OnlineSub->GetPartyInterface()->CreateParty(*UserId, PartyTypeId, PartyConfiguration, OnCreatePartyCompleteDelegate);
 }
@@ -749,7 +815,7 @@ void AMyPlayerController::OnTournamentListDataChanged(const FUniqueNetId& LocalU
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::OnTournamentListDataChanged"));
 	const auto OnlineSub = IOnlineSubsystem::Get();
-	 
+
 
 	TArray< TSharedRef<FOnlineTournament> > TournamentListCache;
 
@@ -775,7 +841,7 @@ void AMyPlayerController::OnTournamentListDataChanged(const FUniqueNetId& LocalU
 			MyCachedTournaments.Add(ThisMyTournamentStruct);
 
 		}
-		
+
 	}
 	else
 	{
@@ -785,7 +851,7 @@ void AMyPlayerController::OnTournamentListDataChanged(const FUniqueNetId& LocalU
 
 	OnTournamentListChangedUETopiaDisplayUIDelegate.Broadcast();
 	return;
-	
+
 }
 
 void AMyPlayerController::ReadTournamentDetails(const FString& TournamentKeyId)
