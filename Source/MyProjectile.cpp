@@ -1,12 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+#include "MyProjectile.h"
 #include "Comp.h"
 #include "UEtopiaCompetitiveCharacter.h"
 #include "Engine.h"
 //For the UGameplayStatics::SpawnEmitterAttached
 #include "MyPlayerState.h"
 #include "ParticleDefinitions.h"
-#include "MyProjectile.h"
+
 
 
 // Sets default values

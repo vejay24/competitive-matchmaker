@@ -1,5 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+#include "MyGameMode.h"
 #include "Comp.h"
 //#include "MyPawn.h"
 #include "MyPlayerState.h"
@@ -10,7 +11,7 @@
 #include "UEtopiaCompetitiveCharacter.h"
 //#include "UEtopiaPlugCharacter.h"
 #include "Blueprint/UserWidget.h"
-#include "MyGameMode.h"
+
 
 
 AMyGameMode::AMyGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)

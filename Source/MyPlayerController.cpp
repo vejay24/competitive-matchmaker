@@ -1,12 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+#include "MyPlayerController.h"
 #include "Comp.h"
 #include "MyGameInstance.h"
-//#include "OnlinePartyUEtopia.h"
+#include "OnlineSubsystemUtils.h"
 #include "ILoginFlowModule.h"
-#include "ILoginFlowManager.h"
+//#include "OnlinePartyUEtopia.h"
 #include "MyPlayerState.h"
-#include "MyPlayerController.h"
+
 
 
 // FOnlinePartyIdUEtopia
@@ -77,34 +78,11 @@ AMyPlayerController::AMyPlayerController()
 	//check(NotificationHandler.IsValid());
 
 
-	// Initialize the login flow UI code
 
+	// Why is this not working?
+	//NotificationHandler->AddPlayerNotificationBinding_Handle()
 
-
-	UWorld* World = GetWorld();
-	FName FacebookIdentifier = Online::GetUtils()->GetOnlineIdentifier(World, FACEBOOK_SUBSYSTEM);
-	FName GoogleIdentifier = Online::GetUtils()->GetOnlineIdentifier(World, GOOGLE_SUBSYSTEM);
-	FName UEtopiaIdentifier = Online::GetUtils()->GetOnlineIdentifier(World, UETOPIA_SUBSYSTEM);
-
-
-
-
-	ILoginFlowModule& LoginFlowModule = ILoginFlowModule::Get();
-
-	LoginFlowManager = LoginFlowModule.CreateLoginFlowManager();
-
-	if (!LoginFlowManager->AddLoginFlow(FacebookIdentifier, ILoginFlowManager::FOnDisplayPopup::CreateUObject(this, &AMyPlayerController::OnDisplayLoginWidget)))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No Facebook subsystem configured. It will be unavailable"));
-	}
-	if (!LoginFlowManager->AddLoginFlow(GoogleIdentifier, ILoginFlowManager::FOnDisplayPopup::CreateUObject(this, &AMyPlayerController::OnDisplayLoginWidget)))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No Google subsystem configured. It will be unavailable"));
-	}
-	if (!LoginFlowManager->AddLoginFlow(UEtopiaIdentifier, ILoginFlowManager::FOnDisplayPopup::CreateUObject(this, &AMyPlayerController::OnDisplayLoginWidget)))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No UEtopia subsystem configured. It will be unavailable"));
-	}
+	//OnlineSub->GetOnlineNotificationTransportManager()->
 
 	// Start a player as captain so they can join matchmaker queue without being in a party first
 	IAmCaptain = true;
@@ -126,10 +104,19 @@ ILoginFlowManager::FOnPopupDismissed AMyPlayerController::OnDisplayLoginWidget(c
 
 	GEngine->GameViewport->AddViewportWidgetContent(DisplayWidget);
 
+	// found this here:
+	// https://answers.unrealengine.com/questions/388469/extending-swebbrowser.html
+	//WebBrowserWidget = SNew(SWebBrowser)
+	//	.InitialURL("http://www.google.com")
+	//	.ShowControls(false)
+	//	.SupportsTransparency(false);
+
+	//return WebBrowserWidget.ToSharedRef();
+
 	// store the reference to the widget
 	DisplayWidgetRef = DisplayWidget;
 
-		//return a FOnPopupDismissed delegate that the underlying system will call when the screen is closed for any reason.
+	//return a FOnPopupDismissed delegate that the underlying system will call when the screen is closed for any reason.
 	return ILoginFlowManager::FOnPopupDismissed::CreateUObject(this, &AMyPlayerController::OnDismissLoginWidget);
 }
 
@@ -150,6 +137,55 @@ FReply AMyPlayerController::CancelLoginFlow()
 	//	LoginFlowManager->CancelLoginFlow();
 	//}
 	return FReply::Handled();
+}
+
+void AMyPlayerController::Login()
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] [AMyPlayerController] Login"));
+
+
+	// Initialize the login flow UI code
+
+
+
+	UWorld* World = GetWorld();
+	FName FacebookIdentifier = Online::GetUtils()->GetOnlineIdentifier(World, FACEBOOK_SUBSYSTEM);
+	FName GoogleIdentifier = Online::GetUtils()->GetOnlineIdentifier(World, GOOGLE_SUBSYSTEM);
+	FName UEtopiaIdentifier = Online::GetUtils()->GetOnlineIdentifier(World, UETOPIA_SUBSYSTEM);
+
+
+
+
+	ILoginFlowModule& LoginFlowModule = ILoginFlowModule::Get();
+
+	LoginFlowManager = LoginFlowModule.CreateLoginFlowManager();
+
+	//if (!LoginFlowManager->AddLoginFlow(FacebookIdentifier, ILoginFlowManager::FOnDisplayPopup::CreateUObject(this, &AMyPlayerController::OnDisplayLoginWidget)))
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("No Facebook subsystem configured. It will be unavailable"));
+	//}
+	//if (!LoginFlowManager->AddLoginFlow(GoogleIdentifier, ILoginFlowManager::FOnDisplayPopup::CreateUObject(this, &AMyPlayerController::OnDisplayLoginWidget)))
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("No Google subsystem configured. It will be unavailable"));
+	//}
+	if (!LoginFlowManager->AddLoginFlow(UEtopiaIdentifier, ILoginFlowManager::FOnDisplayPopup::CreateUObject(this, &AMyPlayerController::OnDisplayLoginWidget), true))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No UEtopia subsystem configured. It will be unavailable"));
+	}
+
+	const auto OnlineSub = IOnlineSubsystem::Get();
+	if (OnlineSub)
+	{
+		const auto IdentityInterface = OnlineSub->GetIdentityInterface();
+		if (IdentityInterface.IsValid())
+		{
+			FOnlineAccountCredentials* Credentials = new FOnlineAccountCredentials("InType", "InId", "InToken");
+			IdentityInterface->Login(0, *Credentials);
+		}
+	}
+
+	
+
 }
 
 void AMyPlayerController::TravelPlayer(const FString& ServerUrl)
@@ -318,7 +354,7 @@ void AMyPlayerController::InviteUserToFriends(const FString& UserKeyId)
 	FString UserToInviteKeyId = UserToInviteId.Get()->ToString();
 	UE_LOG_ONLINE(Log, TEXT("UserToInviteKeyId: %s"), *UserToInviteKeyId);
 
-	// Tell the OSS to send the invite
+	// Tell the OSS to send the invite 
 	OnlineSub->GetFriendsInterface()->SendInvite(0, *UserToInviteId, "default");
 
 }
@@ -460,9 +496,9 @@ void AMyPlayerController::InviteUserToParty(const FString& PartyKeyId, const FSt
 	FOnlinePartyData PartyData = FOnlinePartyData();
 	PartyData.SetAttribute("key_id", PartyKeyId);
 
-	// Tell the OSS to send the invite
+	// Tell the OSS to send the invite 
 	OnlineSub->GetPartyInterface()->SendInvitation(*UserId, PartyId, PartyInviteRecipient, PartyData, OnSendPartyInvitationComplete);
-
+	
 }
 
 void AMyPlayerController::OnPartyInviteReceivedComplete(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& SenderId)
@@ -474,7 +510,7 @@ void AMyPlayerController::OnPartyInviteReceivedComplete(const FUniqueNetId& Loca
 	const auto OnlineSub = IOnlineSubsystem::Get();
 	OnlineSub->GetPartyInterface()->GetPendingInvites(LocalUserId, PendingInvitesArray);
 
-	// Now we need to do something with it.
+	// Now we need to do something with it.  
 	// Just going to stick it in a Struct
 
 	MyCachedPartyInvitations.Empty();
@@ -527,7 +563,7 @@ void AMyPlayerController::OnPartyInviteResponseReceivedComplete(const FUniqueNet
 		if (MyCachedFriends[Index].playerKeyId == SenderId.ToString())
 		{
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::OnPartyInviteResponseReceivedComplete - Found Match"));
-
+			
 			senderTitle = MyCachedFriends[Index].playerTitle;
 		}
 	}
@@ -621,7 +657,7 @@ void AMyPlayerController::OnPartyDataReceivedComplete(const FUniqueNetId& LocalU
 		FVariantData userTitle;
 		FVariantData userKeyId;
 		FVariantData captain;
-
+		
 
 
 		FMyFriend ThisPartyMember;
@@ -636,7 +672,7 @@ void AMyPlayerController::OnPartyDataReceivedComplete(const FUniqueNetId& LocalU
 
 		UE_LOG_ONLINE(Log, TEXT("captain.ToString(): %s"), *captain.ToString());
 
-
+		
 
 		// TODO add captain to partymember
 		//ThisPartyMember.
@@ -650,7 +686,7 @@ void AMyPlayerController::OnPartyDataReceivedComplete(const FUniqueNetId& LocalU
 		UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::OnPartyDataReceivedComplete - No party members - resetting captain status"));
 		IAmCaptain = true;
 	}
-
+	
 	// delegate
 	OnPartyDataReceivedUETopiaDisplayUI.Broadcast();
 }
@@ -672,7 +708,7 @@ void AMyPlayerController::RefreshChatChannelList(const FUniqueNetId& LocalUserId
 
 	OnlineSub->GetChatInterface()->GetJoinedRooms(LocalUserId, CachedRooms);
 
-	// Loop over them and get the room info
+	// Loop over them and get the room info 
 	for (int32 Index = 0; Index < CachedRooms.Num(); Index++)
 	{
 		TSharedPtr<FChatRoomInfo> CachedChatRoomInfo = OnlineSub->GetChatInterface()->GetRoomInfo(LocalUserId, *CachedRooms[Index]);
@@ -688,7 +724,7 @@ void AMyPlayerController::RefreshChatChannelList(const FUniqueNetId& LocalUserId
 
 	//DELEGATE
 	OnChatChannelsChangedUETopia.Broadcast();
-
+	
 }
 
 void AMyPlayerController::CreateChatChannel(const FString& ChatChannelTitle)
@@ -806,7 +842,7 @@ void AMyPlayerController::CreateTournament(const FString& TournamentTitle, const
 	TSharedPtr<const FUniqueNetId> UserId = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(LocalPlayer->GetControllerId());
 
 	// const FUniqueNetId& LocalUserId, const FOnlinePartyTypeId TournamentTypeId, const FTournamentConfiguration& TournamentConfig, const FOnCreateTournamentComplete& Delegate = FOnCreateTournamentComplete()
-
+	
 	OnlineSub->GetTournamentInterface()->CreateTournament(*UserId, PartyTypeId, TournamentConfiguration, OnCreateTournamentCompleteDelegate);
 		//OnlineSub->GetPartyInterface()->CreateParty(*UserId, PartyTypeId, PartyConfiguration, OnCreatePartyCompleteDelegate);
 }
@@ -815,7 +851,7 @@ void AMyPlayerController::OnTournamentListDataChanged(const FUniqueNetId& LocalU
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA]AMyPlayerController::OnTournamentListDataChanged"));
 	const auto OnlineSub = IOnlineSubsystem::Get();
-
+	 
 
 	TArray< TSharedRef<FOnlineTournament> > TournamentListCache;
 
@@ -841,7 +877,7 @@ void AMyPlayerController::OnTournamentListDataChanged(const FUniqueNetId& LocalU
 			MyCachedTournaments.Add(ThisMyTournamentStruct);
 
 		}
-
+		
 	}
 	else
 	{
@@ -851,7 +887,7 @@ void AMyPlayerController::OnTournamentListDataChanged(const FUniqueNetId& LocalU
 
 	OnTournamentListChangedUETopiaDisplayUIDelegate.Broadcast();
 	return;
-
+	
 }
 
 void AMyPlayerController::ReadTournamentDetails(const FString& TournamentKeyId)

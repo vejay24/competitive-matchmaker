@@ -1,9 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+#include "MyGameState.h"
 #include "Comp.h"
 #include "Net/UnrealNetwork.h"
 //#include "MyServerPortalActor.h"
-#include "MyGameState.h"
+
 
 
 AMyGameState::AMyGameState(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)

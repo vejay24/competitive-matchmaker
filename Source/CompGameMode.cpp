@@ -1,8 +1,8 @@
 // Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
-#include "Comp.h"
 #include "CompGameMode.h"
 #include "CompCharacter.h"
+#include "UObject/ConstructorHelpers.h"
 
 ACompGameMode::ACompGameMode()
 {

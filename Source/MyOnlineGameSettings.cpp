@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Comp.h"
 #include "MyOnlineGameSettings.h"
+#include "Comp.h"
+
 
 
 FMyOnlineSessionSettings::FMyOnlineSessionSettings(bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers)

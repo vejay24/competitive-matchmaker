@@ -10,7 +10,7 @@
 *
 */
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FMyInventoryItemStat {
 
 	GENERATED_USTRUCT_BODY()
@@ -21,7 +21,7 @@ struct FMyInventoryItemStat {
 
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FMyInventoryItem {
 
 	GENERATED_USTRUCT_BODY()
@@ -36,7 +36,7 @@ struct FMyInventoryItem {
 
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FMyInventory {
 
 	GENERATED_USTRUCT_BODY()

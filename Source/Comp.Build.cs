@@ -4,16 +4,20 @@ using UnrealBuildTool;
 
 public class Comp : ModuleRules
 {
-	public Comp(TargetInfo Target)
+	public Comp(ReadOnlyTargetRules Target) : base(Target)
 	{
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay","Json",
                 "JsonUtilities",
                 "HTTP",
                 "OnlineSubsystem",
                 "OnlineSubsystemUtils",
-                //"OnlineSubsystemUEtopia",
-                "UMG" });
+                "LoginFlow",
+                "UMG",
+                "Slate",
+                "SlateCore" });
 
-        //PublicIncludePaths.AddRange(new string[] { "OnlineSubsystemUEtopia/Public" });
+        PrivateDependencyModuleNames.AddRange(new string[] { "LoginFlow" });
     }
 }

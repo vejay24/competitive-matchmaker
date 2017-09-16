@@ -1,5 +1,6 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
+#include "UEtopiaCompetitiveCharacter.h"
 #include "Comp.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "UnrealNetwork.h"
@@ -7,7 +8,7 @@
 #include "MyPlayerController.h"
 #include "MyPlayerState.h"
 #include "MyGameInstance.h"
-#include "UEtopiaCompetitiveCharacter.h"
+
 
 //////////////////////////////////////////////////////////////////////////
 // AUEtopiaCompetitiveCharacter
