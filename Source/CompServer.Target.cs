@@ -13,7 +13,6 @@ public class CompServerTarget : TargetRules
 
      Type = TargetType.Server;
 
-      bUsesSteam = true;
         ExtraModuleNames.AddRange(new string[] { "Comp" });
 
     }
