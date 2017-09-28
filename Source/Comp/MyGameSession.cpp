@@ -109,7 +109,7 @@ void AMyGameSession::OnCreateSessionComplete(FName SessionNameIncoming, bool bWa
 		// TODO fix it.
 		// ServerInfo is for continuous servers.  Since we are using matchmaker, we are not going to use this.
 		//gameInstance->GetServerInfo();
-		gameInstance->GetMatchInfo();
+		//gameInstance->GetMatchInfo();
 		//}
 	}
 	//OnCreateSessionComplete().Broadcast(SessionName, bWasSuccessful);
